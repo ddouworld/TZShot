@@ -1,0 +1,57 @@
+name: Windows Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup Qt 6.8.3
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.8.3"
+          host: "windows"
+          target: "desktop"
+          arch: "win64_msvc2022_64"
+          modules: "qttools"
+          cache: true
+
+      - name: Configure (Release)
+        shell: pwsh
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
+          -DBUILD_THIRDPART_OCR=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Deploy Runtime
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Copy-Item build/TZshot.exe dist/TZshot.exe -Force
+          windeployqt --release --qmldir . --no-translations --no-compiler-runtime --no-opengl-sw dist/TZshot.exe
+
+      - name: Pack Zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/* -DestinationPath TZshot-windows-release.zip -CompressionLevel Optimal -Force
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TZshot-windows-release
+          path: TZshot-windows-release.zip
+          if-no-files-found: error
