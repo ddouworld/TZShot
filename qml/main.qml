@@ -204,6 +204,18 @@ TZWindow {
         }
     }
 
+    Connections {
+        target: O_InstanceBridge
+        function onActivationRequested() {
+            if (root.visible) {
+                root.raise()
+                root.requestActivate()
+                return
+            }
+            startScreenshot()
+        }
+    }
+
     TrayIconHelper {
         id: trayHelper
         function onTrayClicked(clickType) {

@@ -1,9 +1,6 @@
 #include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QLockFile>
-#include <QStandardPaths>
-#include <QDir>
 
 #include "tray_icon_helper.h"
 #include "paint_board/paint_board.h"
@@ -12,6 +9,7 @@
 #include "sticky_image_store.h"
 #include "sticky_image_provider_proxy.h"
 #include "language_manager.h"
+#include "instance_activation.h"
 
 // Model
 #include "model/desktop_snapshot.h"
@@ -29,11 +27,9 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    // Single-instance guard: allow only one TZshot process at a time.
-    const QString lockPath = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
-                                 .filePath("TZshot.instance.lock");
-    QLockFile instanceLock(lockPath);
-    if (!instanceLock.tryLock(0)) {
+    // Single-instance activation: second launch notifies the first one and exits.
+    InstanceActivation instanceActivation(QStringLiteral("TZshot.Instance"));
+    if (!instanceActivation.initialize()) {
         return 0;
     }
 
@@ -83,6 +79,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("O_LanguageManager",    &languageManager);
     engine.rootContext()->setContextProperty("O_GifRecordVM",        &gifRecordViewModel);
     engine.rootContext()->setContextProperty("O_OcrVM",              &ocrViewModel);
+    engine.rootContext()->setContextProperty("O_InstanceBridge",     &instanceActivation);
 
     const QUrl url(QStringLiteral("qrc:/qml/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

@@ -10,6 +10,7 @@
 #include <QDesktopServices>
 #include <QFileInfo>
 #include <QUrl>
+#include <QtGlobal>
 
 GifRecordViewModel::GifRecordViewModel(AppSettings& settings, QObject* parent)
     : QObject(parent)
@@ -108,6 +109,16 @@ void GifRecordViewModel::cancelRecording()
     qDebug() << "[GifRecord] 取消录制";
 }
 
+void GifRecordViewModel::setQualityPreset(int preset)
+{
+    const int normalized = qBound(0, preset, 2);
+    if (m_settings.gifQualityPreset() == normalized) {
+        return;
+    }
+    m_settings.setGifQualityPreset(normalized);
+    emit qualityPresetChanged();
+}
+
 void GifRecordViewModel::onFrameCaptured(const QImage& frame)
 {
     if (!m_recording) return;
@@ -162,13 +173,41 @@ void GifRecordViewModel::startEncoding()
 
     qDebug() << "[GifRecord] 开始编码 →" << m_pendingSavePath;
 
-    // 捕获当前帧序列的副本（子线程持有）
-    QVector<QImage> framesToEncode = m_frames;
+    // 根据质量预设做抽帧/缩放，平衡体积与清晰度。
+    const int preset = m_settings.gifQualityPreset();
+    int frameStep = 1;
+    qreal scale = 1.0;
+    int encodeFps = kFps;
+    if (preset == 1) {          // 均衡
+        frameStep = 2;
+        scale = 0.85;
+        encodeFps = 12;
+    } else if (preset == 2) {   // 小体积
+        frameStep = 3;
+        scale = 0.7;
+        encodeFps = 10;
+    }
+
+    QVector<QImage> framesToEncode;
+    framesToEncode.reserve((m_frames.size() + frameStep - 1) / frameStep);
+    for (int i = 0; i < m_frames.size(); i += frameStep) {
+        QImage frame = m_frames[i];
+        if (scale < 0.999) {
+            const int dstW = qMax(2, int(frame.width() * scale));
+            const int dstH = qMax(2, int(frame.height() * scale));
+            frame = frame.scaled(dstW, dstH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        }
+        framesToEncode.append(frame);
+    }
+    if (framesToEncode.isEmpty() && !m_frames.isEmpty()) {
+        framesToEncode.append(m_frames.first());
+    }
+
     QString savePath = m_pendingSavePath;
 
-    QFuture<bool> future = QtConcurrent::run([framesToEncode, savePath]() -> bool {
+    QFuture<bool> future = QtConcurrent::run([framesToEncode, savePath, encodeFps]() -> bool {
         GifEncoder encoder;
-        bool ok = encoder.encode(framesToEncode, savePath, GifRecordViewModel::kFps, true);
+        bool ok = encoder.encode(framesToEncode, savePath, encodeFps, true);
         if (!ok) {
             qDebug() << "[GifRecord] 编码错误：" << encoder.errorString();
         }

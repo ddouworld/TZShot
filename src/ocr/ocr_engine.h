@@ -21,6 +21,11 @@ public:
     QString lastError() const { return m_lastError; }
     bool isReady() const { return m_ready; }
 
+    // Diagnostics helpers for UI self-check.
+    static QStringList tessdataSearchCandidates();
+    static QStringList availableTessdataDirs();
+    static QString suggestedTessdataDir();
+
 private:
     tesseract::TessBaseAPI *m_api = nullptr;
     bool m_ready = false;

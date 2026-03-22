@@ -48,6 +48,8 @@ set(SOURCES
     src/sticky_image_store.h
     src/sticky_image_provider_proxy.cpp
     src/sticky_image_provider_proxy.h
+    src/instance_activation.cpp
+    src/instance_activation.h
     src/singleton.h
 
     # Model

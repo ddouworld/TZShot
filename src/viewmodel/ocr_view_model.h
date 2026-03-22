@@ -17,6 +17,7 @@ class OcrViewModel : public QObject
 
     Q_PROPERTY(bool    isRecognizing READ isRecognizing NOTIFY isRecognizingChanged)
     Q_PROPERTY(QString resultText    READ resultText    NOTIFY resultTextChanged)
+    Q_PROPERTY(QString selfCheckText READ selfCheckText NOTIFY selfCheckTextChanged)
 
 public:
     explicit OcrViewModel(QObject *parent = nullptr);
@@ -24,6 +25,7 @@ public:
 
     bool    isRecognizing() const { return m_isRecognizing; }
     QString resultText()    const { return m_resultText;    }
+    QString selfCheckText() const { return m_selfCheckText; }
 
     // 提交识别任务（供 QML 调用）
     Q_INVOKABLE void recognize(const QImage &image);
@@ -31,9 +33,16 @@ public:
     // 将结果文本复制到系统剪贴板
     Q_INVOKABLE void copyResultToClipboard();
 
+    // OCR 环境一键自检（返回文本可直接展示到 UI）
+    Q_INVOKABLE QString runSelfCheck();
+
+    // 打开 tessdata 目录（若目录不存在会尝试创建）
+    Q_INVOKABLE bool openTessdataFolder();
+
 signals:
     void isRecognizingChanged();
     void resultTextChanged();
+    void selfCheckTextChanged();
     void resultReady(const QString &text);
     void recognizeFailed(const QString &errorMessage);
 
@@ -43,6 +52,7 @@ private slots:
 private:
     bool    m_isRecognizing = false;
     QString m_resultText;
+    QString m_selfCheckText;
 
     QFutureWatcher<QString> m_watcher;
 };

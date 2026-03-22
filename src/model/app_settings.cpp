@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QDebug>
 #include <QLocale>
+#include <QtGlobal>
 
 AppSettings::AppSettings()
 {
@@ -40,6 +41,9 @@ AppSettings::AppSettings()
         }
     }
     qInfo() << "[AppSettings] 保存路径：" << m_savePath;
+
+    const int savedPreset = s.value("GIF/qualityPreset", 1).toInt();
+    m_gifQualityPreset = qBound(0, savedPreset, 2);
 }
 
 // ── AI 配置 ───────────────────────────────────────────────
@@ -99,4 +103,17 @@ void AppSettings::setSavePath(const QString &path)
         dir.mkpath(m_savePath);
 
     QSettings().setValue("ImageSaver/savePath", m_savePath);
+}
+
+int AppSettings::gifQualityPreset() const
+{
+    return m_gifQualityPreset;
+}
+
+void AppSettings::setGifQualityPreset(int preset)
+{
+    const int normalized = qBound(0, preset, 2);
+    if (m_gifQualityPreset == normalized) return;
+    m_gifQualityPreset = normalized;
+    QSettings().setValue("GIF/qualityPreset", m_gifQualityPreset);
 }

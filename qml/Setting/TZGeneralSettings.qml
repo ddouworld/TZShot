@@ -329,8 +329,172 @@ Rectangle {
                 }
             }
 
+            Item { Layout.preferredHeight: 8 }
+
+            // ── GIF 体积预设 ─────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+                spacing: 8
+                Rectangle {
+                    width: 3; height: 15; radius: 2
+                    color: "#3B82F6"
+                    Layout.alignment: Qt.AlignVCenter
+                }
+                Text {
+                    text: qsTr("GIF 录制")
+                    font.pixelSize: 13
+                    font.bold: true
+                    color: "#1E293B"
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 72
+                color: "#FFFFFF"
+                radius: 10
+                border.color: "#E2E8F0"
+                border.width: 1
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    Text {
+                        Layout.preferredWidth: 90
+                        text: qsTr("体积预设")
+                        font.pixelSize: 13
+                        color: "#374151"
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    TZComboBox {
+                        id: gifPresetCombo
+                        model: [qsTr("高质量"), qsTr("均衡"), qsTr("小体积")]
+                        currentIndex: O_GifRecordVM.qualityPreset
+                        Layout.preferredWidth: 180
+                        Layout.preferredHeight: 36
+                        onCurrentIndexChanged: O_GifRecordVM.setQualityPreset(currentIndex)
+                    }
+                }
+            }
+
+            Item { Layout.preferredHeight: 8 }
+
+            // ── OCR 自检 ─────────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+                spacing: 8
+                Rectangle {
+                    width: 3; height: 15; radius: 2
+                    color: "#3B82F6"
+                    Layout.alignment: Qt.AlignVCenter
+                }
+                Text {
+                    text: qsTr("OCR 自检")
+                    font.pixelSize: 13
+                    font.bold: true
+                    color: "#1E293B"
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 168
+                color: "#FFFFFF"
+                radius: 10
+                border.color: "#E2E8F0"
+                border.width: 1
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        radius: 8
+                        color: "#F8FAFC"
+                        border.color: "#E2E8F0"
+                        border.width: 1
+
+                        ScrollView {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            clip: true
+                            TextArea {
+                                text: O_OcrVM.selfCheckText.length > 0
+                                      ? O_OcrVM.selfCheckText
+                                      : qsTr("点击“一键自检”查看 OCR 环境状态。")
+                                readOnly: true
+                                wrapMode: TextEdit.Wrap
+                                selectByMouse: true
+                                background: null
+                                font.pixelSize: 12
+                                color: "#334155"
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Rectangle {
+                            Layout.preferredWidth: 100
+                            Layout.preferredHeight: 34
+                            radius: 6
+                            color: selfCheckMouse.containsMouse ? "#2563EB" : "#3B82F6"
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                            Text {
+                                anchors.centerIn: parent
+                                text: qsTr("一键自检")
+                                font.pixelSize: 13
+                                color: "#FFFFFF"
+                            }
+                            MouseArea {
+                                id: selfCheckMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: O_OcrVM.runSelfCheck()
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: 130
+                            Layout.preferredHeight: 34
+                            radius: 6
+                            color: openTessMouse.containsMouse ? "#E2E8F0" : "#F1F5F9"
+                            border.color: "#CBD5E1"
+                            border.width: 1
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                            Text {
+                                anchors.centerIn: parent
+                                text: qsTr("打开 tessdata")
+                                font.pixelSize: 13
+                                color: "#334155"
+                            }
+                            MouseArea {
+                                id: openTessMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (!O_OcrVM.openTessdataFolder())
+                                        O_OcrVM.runSelfCheck()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Item { Layout.fillHeight: true }
         }
     }
 }
-

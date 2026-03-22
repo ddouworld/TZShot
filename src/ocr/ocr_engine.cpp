@@ -29,6 +29,9 @@ QStringList resolveTessdataDirs()
 #ifdef OCR_TESSDATA_DIR
         QStringLiteral(OCR_TESSDATA_DIR),
 #endif
+        appDir + "/thirdpart/ocr-install/share/tessdata",
+        appDir + "/../thirdpart/ocr-install/share/tessdata",
+        appDir + "/../../thirdpart/ocr-install/share/tessdata",
         appDir + "/thirdpart/ocr-win/share/tessdata",
         appDir + "/../thirdpart/ocr-win/share/tessdata",
         appDir + "/../../thirdpart/ocr-win/share/tessdata",
@@ -57,6 +60,46 @@ QStringList resolveTessdataDirs()
         }
     }
     return validDirs;
+}
+
+QStringList resolveTessdataCandidates()
+{
+    const QString appDir = QCoreApplication::applicationDirPath();
+    QStringList candidates = {
+#ifdef OCR_TESSDATA_DIR
+        QStringLiteral(OCR_TESSDATA_DIR),
+#endif
+        appDir + "/thirdpart/ocr-install/share/tessdata",
+        appDir + "/../thirdpart/ocr-install/share/tessdata",
+        appDir + "/../../thirdpart/ocr-install/share/tessdata",
+        appDir + "/thirdpart/ocr-win/share/tessdata",
+        appDir + "/../thirdpart/ocr-win/share/tessdata",
+        appDir + "/../../thirdpart/ocr-win/share/tessdata",
+        appDir + "/thirdpart/ocr/share/tessdata",
+        appDir + "/../thirdpart/ocr/share/tessdata",
+        appDir + "/../../thirdpart/ocr/share/tessdata",
+        QStringLiteral("/usr/share/tesseract-ocr/5/tessdata"),
+        QStringLiteral("/usr/share/tesseract-ocr/4.00/tessdata")
+    };
+
+    const QByteArray envPrefix = qgetenv("TESSDATA_PREFIX");
+    if (!envPrefix.isEmpty()) {
+        const QString envPath = QString::fromUtf8(envPrefix);
+        if (QFileInfo(envPath).fileName() == QStringLiteral("tessdata")) {
+            candidates.prepend(envPath);
+        } else {
+            candidates.prepend(envPath + "/tessdata");
+        }
+    }
+
+    QStringList normalized;
+    for (const QString &candidate : candidates) {
+        const QString path = QDir(candidate).absolutePath();
+        if (!normalized.contains(path)) {
+            normalized << path;
+        }
+    }
+    return normalized;
 }
 
 QString resolveTesseractProgram()
@@ -114,6 +157,29 @@ QString resolveTesseractProgram()
     return {};
 }
 } // namespace
+
+QStringList OcrEngine::tessdataSearchCandidates()
+{
+    return resolveTessdataCandidates();
+}
+
+QStringList OcrEngine::availableTessdataDirs()
+{
+    return resolveTessdataDirs();
+}
+
+QString OcrEngine::suggestedTessdataDir()
+{
+    const QStringList available = availableTessdataDirs();
+    if (!available.isEmpty()) {
+        return available.first();
+    }
+    const QStringList candidates = tessdataSearchCandidates();
+    if (!candidates.isEmpty()) {
+        return candidates.first();
+    }
+    return {};
+}
 
 OcrEngine::OcrEngine()
 {

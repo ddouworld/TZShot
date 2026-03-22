@@ -5,6 +5,10 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QDebug>
+#include <QDesktopServices>
+#include <QDir>
+#include <QFileInfo>
+#include <QUrl>
 
 // ── 构造 ─────────────────────────────────────────────────
 OcrViewModel::OcrViewModel(QObject *parent)
@@ -75,4 +79,56 @@ void OcrViewModel::copyResultToClipboard()
         cb->setText(m_resultText, QClipboard::Selection);
 #endif
     }
+}
+
+QString OcrViewModel::runSelfCheck()
+{
+    const QStringList available = OcrEngine::availableTessdataDirs();
+    const QStringList candidates = OcrEngine::tessdataSearchCandidates();
+
+    QString report;
+    if (!available.isEmpty()) {
+        report += tr("OCR 环境检查：通过\n");
+        report += tr("可用 tessdata：\n");
+        for (const QString &dir : available) {
+            report += QStringLiteral(" - %1\n").arg(QDir::toNativeSeparators(dir));
+        }
+    } else {
+        report += tr("OCR 环境检查：未通过（缺少 chi_sim/eng 语言包）\n");
+        report += tr("建议把以下文件放到目录中：\n");
+        report += QStringLiteral(" - chi_sim.traineddata\n");
+        report += QStringLiteral(" - eng.traineddata\n");
+        report += tr("候选 tessdata 目录：\n");
+        for (const QString &dir : candidates) {
+            report += QStringLiteral(" - %1\n").arg(QDir::toNativeSeparators(dir));
+        }
+    }
+
+    OcrEngine engine;
+    if (engine.isReady()) {
+        report += tr("引擎初始化：成功");
+    } else {
+        report += tr("引擎初始化：失败\n");
+        report += tr("错误信息：%1").arg(engine.lastError());
+    }
+
+    m_selfCheckText = report.trimmed();
+    emit selfCheckTextChanged();
+    return m_selfCheckText;
+}
+
+bool OcrViewModel::openTessdataFolder()
+{
+    QString dirPath = OcrEngine::suggestedTessdataDir();
+    if (dirPath.isEmpty()) {
+        return false;
+    }
+
+    QDir dir(dirPath);
+    if (!dir.exists()) {
+        if (!QDir().mkpath(dirPath)) {
+            return false;
+        }
+    }
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(dirPath).absoluteFilePath()));
 }
