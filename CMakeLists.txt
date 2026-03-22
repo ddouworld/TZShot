@@ -242,7 +242,6 @@ if(WIN32)
         set(OCR_THIRDPART_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdpart")
         set(OCR_INSTALL_DIR "${OCR_THIRDPART_DIR}/ocr-install")
         set(OCR_TESSDATA_DIR "${OCR_INSTALL_DIR}/share/tessdata")
-        set(OCR_EP_REV "v2")
         set(OCR_ZLIB_VERSION "v1.3.1")
         set(OCR_LIBPNG_VERSION "v1.6.43")
         set(OCR_LIBJPEG_TURBO_VERSION "3.0.3")
@@ -257,8 +256,20 @@ if(WIN32)
             "${OCR_TESSDATA_DIR}"
         )
 
+        # Make ExternalProject follow current build type (Debug/Release) on
+        # single-config generators (e.g. Ninja in Qt Creator kits).
+        set(OCR_EP_BUILD_TYPE_ARG "")
+        if(NOT CMAKE_CONFIGURATION_TYPES)
+            if(CMAKE_BUILD_TYPE STREQUAL "")
+                set(OCR_EP_BUILD_TYPE "Debug")
+            else()
+                set(OCR_EP_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
+            endif()
+            set(OCR_EP_BUILD_TYPE_ARG "-DCMAKE_BUILD_TYPE=${OCR_EP_BUILD_TYPE}")
+        endif()
+
         ExternalProject_Add(zlib_ep
-            PREFIX "${OCR_THIRDPART_DIR}/zlib-${OCR_EP_REV}"
+            PREFIX "${OCR_THIRDPART_DIR}/zlib"
             GIT_REPOSITORY "https://github.com/madler/zlib.git"
             GIT_TAG "${OCR_ZLIB_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -266,10 +277,11 @@ if(WIN32)
                 -DCMAKE_INSTALL_PREFIX=${OCR_INSTALL_DIR}
                 -DBUILD_SHARED_LIBS=ON
                 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+                ${OCR_EP_BUILD_TYPE_ARG}
         )
 
         ExternalProject_Add(libpng_ep
-            PREFIX "${OCR_THIRDPART_DIR}/libpng-${OCR_EP_REV}"
+            PREFIX "${OCR_THIRDPART_DIR}/libpng"
             GIT_REPOSITORY "https://github.com/pnggroup/libpng.git"
             GIT_TAG "${OCR_LIBPNG_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -282,10 +294,11 @@ if(WIN32)
                 -DPNG_TESTS=OFF
                 -DPNG_EXECUTABLES=OFF
                 -DPNG_FRAMEWORK=OFF
+                ${OCR_EP_BUILD_TYPE_ARG}
         )
 
         ExternalProject_Add(libjpeg_ep
-            PREFIX "${OCR_THIRDPART_DIR}/libjpeg-${OCR_EP_REV}"
+            PREFIX "${OCR_THIRDPART_DIR}/libjpeg"
             GIT_REPOSITORY "https://github.com/libjpeg-turbo/libjpeg-turbo.git"
             GIT_TAG "${OCR_LIBJPEG_TURBO_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -296,10 +309,11 @@ if(WIN32)
                 -DENABLE_STATIC=OFF
                 -DWITH_TURBOJPEG=ON
                 -DWITH_JPEG8=ON
+                ${OCR_EP_BUILD_TYPE_ARG}
         )
 
         ExternalProject_Add(libtiff_ep
-            PREFIX "${OCR_THIRDPART_DIR}/libtiff-${OCR_EP_REV}"
+            PREFIX "${OCR_THIRDPART_DIR}/libtiff"
             GIT_REPOSITORY "https://github.com/libsdl-org/libtiff.git"
             GIT_TAG "${OCR_LIBTIFF_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -319,10 +333,11 @@ if(WIN32)
                 -Dtiff-tests=OFF
                 -Dtiff-contrib=OFF
                 -Dtiff-docs=OFF
+                ${OCR_EP_BUILD_TYPE_ARG}
         )
 
         ExternalProject_Add(leptonica_ep
-            PREFIX "${OCR_THIRDPART_DIR}/leptonica-${OCR_EP_REV}"
+            PREFIX "${OCR_THIRDPART_DIR}/leptonica"
             GIT_REPOSITORY "https://github.com/DanBloomberg/leptonica.git"
             GIT_TAG "${OCR_LEPTONICA_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -334,9 +349,6 @@ if(WIN32)
                 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
                 -DSW_BUILD=OFF
                 -DSTRICT_CONF=ON
-                -DTIFF_DIR=${OCR_INSTALL_DIR}/lib/cmake/tiff
-                -DTIFF_INCLUDE_DIR=${OCR_INSTALL_DIR}/include
-                -DTIFF_LIBRARY=${OCR_INSTALL_DIR}/lib/tiffd.lib
                 -DENABLE_ZLIB=ON
                 -DENABLE_PNG=ON
                 -DENABLE_GIF=OFF
@@ -344,10 +356,11 @@ if(WIN32)
                 -DENABLE_TIFF=ON
                 -DENABLE_WEBP=OFF
                 -DENABLE_OPENJPEG=OFF
+                ${OCR_EP_BUILD_TYPE_ARG}
         )
 
         ExternalProject_Add(tesseract_ep
-            PREFIX "${OCR_THIRDPART_DIR}/tesseract-${OCR_EP_REV}"
+            PREFIX "${OCR_THIRDPART_DIR}/tesseract"
             GIT_REPOSITORY "https://github.com/tesseract-ocr/tesseract.git"
             GIT_TAG "${OCR_TESSERACT_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -362,6 +375,7 @@ if(WIN32)
                 -DDISABLE_ARCHIVE=ON
                 -DDISABLE_CURL=ON
                 -DOPENMP_BUILD=OFF
+                ${OCR_EP_BUILD_TYPE_ARG}
         )
 
         add_dependencies(TZshot tesseract_ep)

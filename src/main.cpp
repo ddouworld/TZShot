@@ -1,6 +1,9 @@
 #include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QLockFile>
+#include <QStandardPaths>
+#include <QDir>
 
 #include "tray_icon_helper.h"
 #include "paint_board/paint_board.h"
@@ -25,6 +28,15 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    // Single-instance guard: allow only one TZshot process at a time.
+    const QString lockPath = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                 .filePath("TZshot.instance.lock");
+    QLockFile instanceLock(lockPath);
+    if (!instanceLock.tryLock(0)) {
+        return 0;
+    }
+
     QCoreApplication::setOrganizationName("TZshot");
     QCoreApplication::setOrganizationDomain("tzshot.local");
     QCoreApplication::setApplicationName("TZshot");
