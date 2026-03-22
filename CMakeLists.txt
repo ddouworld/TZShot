@@ -121,7 +121,6 @@ set(SOURCES
 
     # Resources
     qml.qrc
-    i18n/i18n.qrc
 )
 
 # ── 平台专属源文件 ────────────────────────────────────────
@@ -423,6 +422,20 @@ set_target_properties(TZshot PROPERTIES
 # ── 翻译 ──────────────────────────────────────────────────
 qt_add_translations(TZshot
     TS_FILES ${TS_FILES}
+    QM_FILES_OUTPUT_VARIABLE QM_FILES
+)
+
+# Package generated .qm files into the app resource at :/i18n.
+foreach(qm_file IN LISTS QM_FILES)
+    get_filename_component(qm_name "${qm_file}" NAME)
+    set_source_files_properties("${qm_file}" PROPERTIES
+        QT_RESOURCE_ALIAS "${qm_name}"
+    )
+endforeach()
+
+qt_add_resources(TZshot "i18n_translations"
+    PREFIX "/i18n"
+    FILES ${QM_FILES}
 )
 
 # ── 安装 ──────────────────────────────────────────────────
