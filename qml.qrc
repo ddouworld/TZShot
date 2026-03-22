@@ -1,0 +1,47 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/TZStickyWindow.qml</file>
+        <file>qml/TZWindow.qml</file>
+        <file>qml/TZScreenOverlay.qml</file>
+        <file>qml/TZLable.qml</file>
+        <file>qml/TZTool.qml</file>
+        <file>qml/TZResizeHandle.qml</file>
+        <file>qml/TZResizeHandleGroup.qml</file>
+        <file>qml/TZChat.qml</file>
+        <file>qml/Setting/TZSettingWin.qml</file>
+        <file>qml/Setting/TZGeneralSettings.qml</file>
+        <file>qml/Setting/TZRightPanel.qml</file>
+        <file>qml/TZControls/qmldir</file>
+        <file>qml/TZControls/TZComboBox.qml</file>
+        <file>qml/Setting/TZHotkeySettings.qml</file>
+        <file>qml/Setting/TZAboutWin.qml</file>
+        <file>resource/img/lc_check.svg</file>
+        <file>resource/img/lc_x.svg</file>
+        <file>resource/img/lc_save.svg</file>
+        <file>resource/img/lc_pin.svg</file>
+        <file>resource/img/lc_square.svg</file>
+        <file>resource/img/lc_pencil.svg</file>
+        <file>resource/img/lc_circle.svg</file>
+        <file>resource/img/lc_arrow.svg</file>
+        <file>resource/img/lc_mosaic.svg</file>
+        <file>resource/img/lc_text.svg</file>
+        <file>resource/img/lc_list_ordered.svg</file>
+        <file>resource/img/lc_highlighter.svg</file>
+        <file>resource/img/lc_undo.svg</file>
+        <file>resource/img/tray_icon.svg</file>
+        <file>qml/TZMarkToolInfo.qml</file>
+        <file>qml/TZMagnifyingGlass.qml</file>
+        <file>resource/img/lc_close.svg</file>
+        <file>resource/img/lc_chat.svg</file>
+        <file>resource/img/lc_emoji.svg</file>
+        <file>resource/img/lc_file.svg</file>
+        <file>resource/img/lc_send.svg</file>
+        <file>qml/TZLoadingSpinner.qml</file>
+        <file>qml/TZGifRecordBar.qml</file>
+        <file>qml/TZOcrResult.qml</file>
+        <file>resource/img/lc_gif_record.svg</file>
+        <file>resource/img/lc_gif_stop.svg</file>
+        <file>resource/img/lc_ocr.svg</file>
+    </qresource>
+</RCC>

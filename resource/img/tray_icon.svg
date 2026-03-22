@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- 虚线选区矩形 -->
+  <rect x="3" y="3" width="26" height="26" rx="2"
+        fill="none" stroke="#FFFFFF" stroke-width="2"
+        stroke-dasharray="4,3"/>
+  <!-- 十字准心横线（中间留空） -->
+  <line x1="3"  y1="16" x2="12" y2="16" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <line x1="20" y1="16" x2="29" y2="16" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <!-- 十字准心竖线（中间留空） -->
+  <line x1="16" y1="3"  x2="16" y2="12" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <line x1="16" y1="20" x2="16" y2="29" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <!-- 中心圆点 -->
+  <circle cx="16" cy="16" r="2.5" fill="#FFFFFF"/>
+</svg>

@@ -1,0 +1,106 @@
+# This file is used to ignore files which are generated
+# ----------------------------------------------------------------------------
+
+*~
+*.autosave
+*.a
+*.core
+*.moc
+*.o
+*.obj
+*.orig
+*.rej
+*.so
+*.so.*
+*_pch.h.cpp
+*_resource.rc
+*.qm
+.#*
+*.*#
+core
+!core/
+tags
+.DS_Store
+.directory
+*.debug
+Makefile*
+*.prl
+*.app
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+Thumbs.db
+*.res
+*.rc
+/.qmake.cache
+/.qmake.stash
+
+# qtcreator generated files
+*.pro.user*
+CMakeLists.txt.user
+CMakeLists.txt.user.*
+cmake-build-*/
+
+# xemacs temporary files
+*.flc
+
+# Vim temporary files
+.*.swp
+
+# Visual Studio generated files
+*.ib_pdb_index
+*.idb
+*.ilk
+*.pdb
+*.sln
+*.suo
+*.vcproj
+*vcproj.*.*.user
+*.ncb
+*.sdf
+*.opensdf
+*.vcxproj
+*vcxproj.*
+
+# MinGW generated files
+*.Debug
+*.Release
+
+# Python byte code
+*.pyc
+
+# Binaries
+# --------
+*.dll
+*.exe
+
+# Visual Studio / CMake build artifacts
+# ------------------------------------
+.vs/
+ipch/
+Debug/
+Release/
+x64/
+x86/
+[Bb]uild/
+[Bb]uild*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+*.dir/
+*.tlog
+*.lastbuildstate
+*.vcxproj.user
+*.cache
+*.ilk
+*.pdb
+*.exp
+*.lib
+*.obj
+*.idb
+
+# Third-party packages (do not commit vendor/downloaded dependencies)
+# ------------------------------------------------------------------
+thirdpart/**
+!thirdpart/.gitkeep
