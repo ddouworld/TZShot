@@ -97,6 +97,14 @@ cmake --build build --config Release
 ./build/TZshot
 ```
 
+### OCR 依赖说明（Windows）
+- 首次配置/构建时，CMake 会自动从 GitHub 拉取并构建 `Leptonica`、`Tesseract`（输出到项目根目录 `thirdpart/ocr-install`）。
+- 项目默认**不自动下载**语言数据文件（`tessdata`）。
+- 请手动准备并放置：
+  - `thirdpart/ocr-install/share/tessdata/chi_sim.traineddata`
+  - `thirdpart/ocr-install/share/tessdata/eng.traineddata`
+- 若缺少上述文件，运行时会出现 `Tesseract Init 失败：未找到可用 tessdata`。
+
 ### 默认快捷键
 - `Alt + A`: 截图
 - `Alt + S`: 截图并保存
@@ -213,6 +221,14 @@ Run on Linux (path may vary by generator):
 ```bash
 ./build/TZshot
 ```
+
+### OCR Notes (Windows)
+- On first configure/build, CMake auto-fetches and builds `Leptonica` and `Tesseract` from GitHub into `thirdpart/ocr-install` (project root).
+- This project does **not** auto-download language data (`tessdata`).
+- Please add these files manually:
+  - `thirdpart/ocr-install/share/tessdata/chi_sim.traineddata`
+  - `thirdpart/ocr-install/share/tessdata/eng.traineddata`
+- If they are missing, OCR will fail at runtime with `Tesseract Init failed: no usable tessdata found`.
 
 ### Default Shortcuts
 - `Alt + A`: Screenshot
