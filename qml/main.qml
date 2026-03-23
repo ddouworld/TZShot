@@ -13,6 +13,13 @@ TZWindow {
 
     property var settingWinObj: null
     property var aboutWinObj: null
+    property var longCaptureBarObj: null
+    property var longCaptureBarComponent: null
+    property var longCapturePreviewObj: null
+    property var longCapturePreviewComponent: null
+    property var longCaptureFrameObj: null
+    property var longCaptureFrameComponent: null
+    property rect pendingLongCaptureRect: Qt.rect(0, 0, 0, 0)
 
     property var overlayList: []
     property var overlayComponent: null
@@ -130,6 +137,115 @@ TZWindow {
         overlayList = []
     }
 
+    function showLongCaptureBar() {
+        if (longCaptureBarObj !== null) {
+            longCaptureBarObj.visible = true
+            longCaptureBarObj.raise()
+            return
+        }
+        if (longCaptureBarComponent === null)
+            longCaptureBarComponent = Qt.createComponent("qrc:/qml/TZLongCaptureBar.qml")
+        if (longCaptureBarComponent.status === Component.Ready) {
+            longCaptureBarObj = longCaptureBarComponent.createObject(null)
+            if (longCaptureBarObj) {
+                longCaptureBarObj.x = Math.round((Screen.width - longCaptureBarObj.width) / 2)
+                longCaptureBarObj.y = 26
+                longCaptureBarObj.visible = true
+                longCaptureBarObj.raise()
+                longCaptureBarObj.startRequested.connect(function() {
+                    if (pendingLongCaptureRect.width === 0 || pendingLongCaptureRect.height === 0)
+                        return
+                    longCaptureBarObj.running = true
+                    longCaptureBarObj.message = qsTr("滚动检测中，滑动内容会自动拼接")
+                    O_ScrollCaptureVM.start(pendingLongCaptureRect)
+                })
+                longCaptureBarObj.stopRequested.connect(function() {
+                    if (longCaptureBarObj.running) {
+                        O_ScrollCaptureVM.stop()
+                    } else {
+                        hideLongCaptureBar()
+                        root.resetArea()
+                    }
+                })
+            }
+        } else if (longCaptureBarComponent.status === Component.Error) {
+            console.error("LongCaptureBar load failed:", longCaptureBarComponent.errorString())
+        }
+    }
+
+    function showLongCapturePreview() {
+        if (longCapturePreviewObj !== null) {
+            longCapturePreviewObj.visible = true
+            longCapturePreviewObj.raise()
+            return
+        }
+        if (longCapturePreviewComponent === null)
+            longCapturePreviewComponent = Qt.createComponent("qrc:/qml/TZLongCapturePreview.qml")
+        if (longCapturePreviewComponent.status === Component.Ready) {
+            longCapturePreviewObj = longCapturePreviewComponent.createObject(null)
+            if (longCapturePreviewObj) {
+                longCapturePreviewObj.x = Math.max(0, Screen.width - longCapturePreviewObj.width - 26)
+                longCapturePreviewObj.y = Math.max(20, Math.round((Screen.height - longCapturePreviewObj.height) / 2))
+                longCapturePreviewObj.visible = true
+                longCapturePreviewObj.raise()
+            }
+        } else if (longCapturePreviewComponent.status === Component.Error) {
+            console.error("LongCapturePreview load failed:", longCapturePreviewComponent.errorString())
+        }
+    }
+
+    function showLongCaptureFrame(captureRect) {
+        if (longCaptureFrameComponent === null)
+            longCaptureFrameComponent = Qt.createComponent("qrc:/qml/TZLongCaptureFrame.qml")
+        if (longCaptureFrameObj === null && longCaptureFrameComponent.status === Component.Ready) {
+            longCaptureFrameObj = longCaptureFrameComponent.createObject(null)
+        } else if (longCaptureFrameComponent.status === Component.Error) {
+            console.error("LongCaptureFrame load failed:", longCaptureFrameComponent.errorString())
+        }
+        if (longCaptureFrameObj) {
+            longCaptureFrameObj.captureRect = captureRect
+            longCaptureFrameObj.visible = true
+            longCaptureFrameObj.raise()
+        }
+    }
+
+    function hideLongCaptureBar() {
+        if (longCaptureBarObj !== null) {
+            longCaptureBarObj.close()
+            longCaptureBarObj.destroy(100)
+            longCaptureBarObj = null
+        }
+        if (longCapturePreviewObj !== null) {
+            longCapturePreviewObj.close()
+            longCapturePreviewObj.destroy(100)
+            longCapturePreviewObj = null
+        }
+        if (longCaptureFrameObj !== null) {
+            longCaptureFrameObj.close()
+            longCaptureFrameObj.destroy(100)
+            longCaptureFrameObj = null
+        }
+        pendingLongCaptureRect = Qt.rect(0, 0, 0, 0)
+    }
+
+    function beginLongCapture(captureRect) {
+        pendingLongCaptureRect = captureRect
+        root.visibility = Window.Hidden
+        showLongCaptureBar()
+        showLongCapturePreview()
+        showLongCaptureFrame(captureRect)
+        if (longCaptureBarObj) {
+            longCaptureBarObj.running = false
+            longCaptureBarObj.frameCount = 0
+            longCaptureBarObj.message = qsTr("点击开始后，滑动内容自动拼接")
+        }
+        if (longCapturePreviewObj) {
+            longCapturePreviewObj.previewUrl = ""
+            longCapturePreviewObj.frameCount = 0
+            longCapturePreviewObj.statusText = qsTr("等待开始")
+        }
+    }
+
     function resetArea() {
         _destroyOverlays()
         _prepareSessionState()
@@ -201,6 +317,51 @@ TZWindow {
         }
         function onRecognizeFailed(errorMessage) {
             trayHelper.showMessage(qsTr("OCR 识别失败"), errorMessage)
+        }
+    }
+
+    Connections {
+        target: O_ScrollCaptureVM
+        function onCaptureStarted() {
+            if (longCaptureBarObj) {
+                longCaptureBarObj.running = true
+                longCaptureBarObj.message = qsTr("滚动检测中，滑动内容会自动拼接")
+            }
+            trayHelper.showMessage(qsTr("长截图开始"), qsTr("请直接滚动目标内容，系统会在滚动变化时自动拼接"))
+        }
+        function onCaptureSucceeded(savedPath) {
+            if (longCaptureBarObj) {
+                longCaptureBarObj.running = false
+                longCaptureBarObj.message = qsTr("长截图完成")
+            }
+            root.hideLongCaptureBar()
+            root.resetArea()
+            trayHelper.showMessage(qsTr("长截图完成"), qsTr("已复制到剪贴板并保存到：") + savedPath)
+        }
+        function onCaptureFailed(errorMessage) {
+            if (longCaptureBarObj) {
+                longCaptureBarObj.running = false
+                longCaptureBarObj.message = qsTr("长截图失败")
+            }
+            root.hideLongCaptureBar()
+            root.resetArea()
+            trayHelper.showMessage(qsTr("长截图失败"), errorMessage)
+        }
+        function onCapturedFramesChanged() {
+            if (longCaptureBarObj)
+                longCaptureBarObj.frameCount = O_ScrollCaptureVM.capturedFrames
+            if (longCapturePreviewObj)
+                longCapturePreviewObj.frameCount = O_ScrollCaptureVM.capturedFrames
+        }
+        function onStatusTextChanged() {
+            if (longCaptureBarObj)
+                longCaptureBarObj.message = O_ScrollCaptureVM.statusText
+            if (longCapturePreviewObj)
+                longCapturePreviewObj.statusText = O_ScrollCaptureVM.statusText
+        }
+        function onPreviewImageUrlChanged() {
+            if (longCapturePreviewObj)
+                longCapturePreviewObj.previewUrl = O_ScrollCaptureVM.previewImageUrl
         }
     }
 

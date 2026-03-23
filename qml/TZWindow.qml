@@ -592,7 +592,7 @@ Window {
 
         TZTool {
             id: tool
-            width: 620; height: 44
+            width: 656; height: 44
             z: 30
 
             // Toolbar position (local coordinates)
@@ -658,6 +658,11 @@ Window {
                         screenshotArea.width, screenshotArea.height
                     )
                 })
+            }
+
+            onSignalLongScreenshot: {
+                var captureRect = screenshotArea
+                root.beginLongCapture(captureRect)
             }
 
             onSignalOcr: {

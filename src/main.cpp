@@ -21,6 +21,7 @@
 #include "viewmodel/ai_view_model.h"
 #include "viewmodel/storage_view_model.h"
 #include "viewmodel/gif_record_view_model.h"
+#include "viewmodel/scroll_capture_view_model.h"
 #include "viewmodel/ocr_view_model.h"
 
 int main(int argc, char *argv[])
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
     StorageViewModel    storageViewModel(appSettings);
     LanguageManager     languageManager(appSettings);
     GifRecordViewModel  gifRecordViewModel(appSettings);
+    ScrollCaptureViewModel scrollCaptureViewModel(screenshotViewModel, appSettings);
     OcrViewModel        ocrViewModel;
 
 
@@ -78,6 +80,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("O_GlobalShortcut",     &globalShortcut);
     engine.rootContext()->setContextProperty("O_LanguageManager",    &languageManager);
     engine.rootContext()->setContextProperty("O_GifRecordVM",        &gifRecordViewModel);
+    engine.rootContext()->setContextProperty("O_ScrollCaptureVM",    &scrollCaptureViewModel);
     engine.rootContext()->setContextProperty("O_OcrVM",              &ocrViewModel);
     engine.rootContext()->setContextProperty("O_InstanceBridge",     &instanceActivation);
 

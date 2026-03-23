@@ -59,6 +59,12 @@ public:
     // 截图选区并直接返回 QImage（OCR 使用）
     Q_INVOKABLE QImage captureRectToImage(const QRect &rect);
 
+    // 实时抓取选区（每次都会刷新桌面快照），用于长截图连续采样。
+    QImage captureRectToImageLive(const QRect &rect);
+
+    // 复制任意图像到剪贴板。
+    bool copyImageToClipboard(const QImage &image);
+
 private:
     // 内部：从快照裁剪选区并叠加 PaintBoard 标注层
     // setBackground=true 时将结果写回 PaintBoard 背景（仅马赛克路径）

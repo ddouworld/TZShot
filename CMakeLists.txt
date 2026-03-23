@@ -69,6 +69,8 @@ set(SOURCES
     src/viewmodel/storage_view_model.h
     src/viewmodel/gif_record_view_model.cpp
     src/viewmodel/gif_record_view_model.h
+    src/viewmodel/scroll_capture_view_model.cpp
+    src/viewmodel/scroll_capture_view_model.h
     src/viewmodel/ocr_view_model.cpp
     src/viewmodel/ocr_view_model.h
 
@@ -78,6 +80,8 @@ set(SOURCES
     src/gif_encoder/gif_encoder.h
     src/gif_encoder/gif_frame_grabber.cpp
     src/gif_encoder/gif_frame_grabber.h
+    src/scroll/scroll_stitcher.cpp
+    src/scroll/scroll_stitcher.h
 
     # OCR
     src/ocr/ocr_engine.cpp
@@ -154,6 +158,7 @@ target_include_directories(TZshot PRIVATE
     src/paint_board/shape
     src/model
     src/viewmodel
+    src/scroll
     src/shortcut_key
 )
 
@@ -243,6 +248,11 @@ if(WIN32)
         set(OCR_THIRDPART_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdpart")
         set(OCR_INSTALL_DIR "${OCR_THIRDPART_DIR}/ocr-install")
         set(OCR_TESSDATA_DIR "${OCR_INSTALL_DIR}/share/tessdata")
+        # ExternalProject build trees must be generator-specific.
+        # Otherwise switching between Ninja/VS reuses incompatible CMake caches.
+        set(OCR_EP_KEY "${CMAKE_GENERATOR}-${CMAKE_GENERATOR_PLATFORM}")
+        string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" OCR_EP_KEY "${OCR_EP_KEY}")
+        set(OCR_EP_ROOT_DIR "${OCR_THIRDPART_DIR}/_ep_${OCR_EP_KEY}")
         set(OCR_ZLIB_VERSION "v1.3.1")
         set(OCR_LIBPNG_VERSION "v1.6.43")
         set(OCR_LIBJPEG_TURBO_VERSION "3.0.3")
@@ -270,7 +280,7 @@ if(WIN32)
         endif()
 
         ExternalProject_Add(zlib_ep
-            PREFIX "${OCR_THIRDPART_DIR}/zlib"
+            PREFIX "${OCR_EP_ROOT_DIR}/zlib"
             GIT_REPOSITORY "https://github.com/madler/zlib.git"
             GIT_TAG "${OCR_ZLIB_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -282,7 +292,7 @@ if(WIN32)
         )
 
         ExternalProject_Add(libpng_ep
-            PREFIX "${OCR_THIRDPART_DIR}/libpng"
+            PREFIX "${OCR_EP_ROOT_DIR}/libpng"
             GIT_REPOSITORY "https://github.com/pnggroup/libpng.git"
             GIT_TAG "${OCR_LIBPNG_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -299,7 +309,7 @@ if(WIN32)
         )
 
         ExternalProject_Add(libjpeg_ep
-            PREFIX "${OCR_THIRDPART_DIR}/libjpeg"
+            PREFIX "${OCR_EP_ROOT_DIR}/libjpeg"
             GIT_REPOSITORY "https://github.com/libjpeg-turbo/libjpeg-turbo.git"
             GIT_TAG "${OCR_LIBJPEG_TURBO_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -314,7 +324,7 @@ if(WIN32)
         )
 
         ExternalProject_Add(libtiff_ep
-            PREFIX "${OCR_THIRDPART_DIR}/libtiff"
+            PREFIX "${OCR_EP_ROOT_DIR}/libtiff"
             GIT_REPOSITORY "https://github.com/libsdl-org/libtiff.git"
             GIT_TAG "${OCR_LIBTIFF_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -338,7 +348,7 @@ if(WIN32)
         )
 
         ExternalProject_Add(leptonica_ep
-            PREFIX "${OCR_THIRDPART_DIR}/leptonica"
+            PREFIX "${OCR_EP_ROOT_DIR}/leptonica"
             GIT_REPOSITORY "https://github.com/DanBloomberg/leptonica.git"
             GIT_TAG "${OCR_LEPTONICA_VERSION}"
             UPDATE_DISCONNECTED 1
@@ -361,7 +371,7 @@ if(WIN32)
         )
 
         ExternalProject_Add(tesseract_ep
-            PREFIX "${OCR_THIRDPART_DIR}/tesseract"
+            PREFIX "${OCR_EP_ROOT_DIR}/tesseract"
             GIT_REPOSITORY "https://github.com/tesseract-ocr/tesseract.git"
             GIT_TAG "${OCR_TESSERACT_VERSION}"
             UPDATE_DISCONNECTED 1

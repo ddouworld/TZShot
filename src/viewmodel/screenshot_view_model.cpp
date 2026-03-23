@@ -133,6 +133,22 @@ QImage ScreenshotViewModel::captureRectToImage(const QRect &rect)
     return screen->grabWindow(0, r.x(), r.y(), r.width(), r.height()).toImage();
 }
 
+QImage ScreenshotViewModel::captureRectToImageLive(const QRect &rect)
+{
+    const QRect r = rect.normalized();
+    if (r.isEmpty()) {
+        return {};
+    }
+
+    m_snapshot.grab();
+    return captureRectToImage(r);
+}
+
+bool ScreenshotViewModel::copyImageToClipboard(const QImage &image)
+{
+    return writeImageToClipboard(image);
+}
+
 // ── captureScreen (private) ───────────────────────────────
 QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
                                           const QRect &rect,

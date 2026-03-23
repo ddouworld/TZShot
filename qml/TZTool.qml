@@ -17,6 +17,7 @@ Rectangle {
     signal signalSticky
     signal signalUndo
     signal signalGifRecord
+    signal signalLongScreenshot
     signal signalOcr
 
     property string activeTool: ""
@@ -98,6 +99,13 @@ Rectangle {
             color: gifArea.containsMouse ? "#FFF7ED" : "transparent"
             Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_gif_record.svg"; width: 18; height: 18 }
             MouseArea { id: gifArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: tool.showTip(qsTr("录制GIF"), parent); onExited: tool.hideTip(qsTr("录制GIF")); onPressed: signalGifRecord() }
+        }
+
+        Rectangle {
+            width: 32; height: 32; radius: 7
+            color: longShotArea.containsMouse ? "#FFF7ED" : "transparent"
+            Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_longshot.svg"; width: 18; height: 18 }
+            MouseArea { id: longShotArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: tool.showTip(qsTr("长截图"), parent); onExited: tool.hideTip(qsTr("长截图")); onPressed: signalLongScreenshot() }
         }
 
         Rectangle { width: 1; height: 20; color: "#E2E8F0"; Layout.alignment: Qt.AlignVCenter }

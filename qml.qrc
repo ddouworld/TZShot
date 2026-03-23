@@ -40,8 +40,12 @@
         <file>qml/TZLoadingSpinner.qml</file>
         <file>qml/TZGifRecordBar.qml</file>
         <file>qml/TZOcrResult.qml</file>
+        <file>qml/TZLongCaptureBar.qml</file>
+        <file>qml/TZLongCapturePreview.qml</file>
+        <file>qml/TZLongCaptureFrame.qml</file>
         <file>resource/img/lc_gif_record.svg</file>
         <file>resource/img/lc_gif_stop.svg</file>
         <file>resource/img/lc_ocr.svg</file>
+        <file>resource/img/lc_longshot.svg</file>
     </qresource>
 </RCC>
