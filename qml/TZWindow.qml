@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Window
 import QtQuick.Shapes
 import QtQuick.Layouts
@@ -39,6 +39,7 @@ Window {
     property bool textPressMoved: false
     property point textClickAbsPoint: Qt.point(0, 0)
     property point textClickLocalPoint: Qt.point(0, 0)
+    property string dragMode: "none" // none | select | move
 
     property alias tool:      tool
     property alias paintBoard: paintBoard
@@ -189,9 +190,12 @@ Window {
     function handleMousePressed(ax, ay) {
         if (screenshotArea.width !== 0 || screenshotArea.height !== 0) {
             if (isPointInRect(screenshotArea, ax, ay)) {
+                dragMode = "move"
                 offset.x = ax
                 offset.y = ay
+                initialScreenshotArea = screenshotArea
             } else {
+                dragMode = "select"
                 paintBoard.reset()
                 tool.activeTool = ""
                 tool.markToolInfoVisible = false
@@ -206,6 +210,7 @@ Window {
                 screenshotArea        = Qt.rect(ax, ay, 0, 0)
             }
         } else {
+            dragMode = "select"
             paintBoard.reset()
             tool.activeTool = ""
             initialScreenshotArea = Qt.rect(ax, ay, 0, 0)
@@ -227,28 +232,31 @@ Window {
                 : Qt.rect(0, 0, 0, 0)
             return
         }
-        if (screenshotArea.width !== 0 && screenshotArea.height !== 0) {
-            if (isPointInRect(screenshotArea, ax, ay) && isPressed) {
-                let dx = ax - offset.x
-                let dy = ay - offset.y
-                screenshotArea = Qt.rect(
-                    initialScreenshotArea.x + dx,
-                    initialScreenshotArea.y + dy,
-                    screenshotArea.width, screenshotArea.height)
-                return
-            }
+        if (!isPressed) {
+            return
         }
-        if (isPressed && !isPointInRect(screenshotArea, ax, ay)) {
+
+        if (dragMode === "move") {
+            let dx = ax - offset.x
+            let dy = ay - offset.y
+            screenshotArea = Qt.rect(
+                initialScreenshotArea.x + dx,
+                initialScreenshotArea.y + dy,
+                initialScreenshotArea.width, initialScreenshotArea.height)
+            return
+        }
+
+        if (dragMode === "select") {
             var useShift = (modifiers & Qt.ShiftModifier) !== 0
             var useAlt = (modifiers & Qt.AltModifier) !== 0
             screenshotArea = selectionRectFromDrag(
                 initialScreenshotArea.x, initialScreenshotArea.y, ax, ay, useShift, useAlt)
             if (tool.visible) tool.visible = false
         }
-        //resizeHandleGroup.area = localScreenshotArea
     }
 
     function handleMouseReleased() {
+        dragMode = "none"
         if (Math.abs(screenshotArea.width) <= 5 && Math.abs(screenshotArea.height) <= 5) {
             if (highlightRect.width > 0 && highlightRect.height > 0) {
                 screenshotArea        = highlightRect
@@ -264,6 +272,10 @@ Window {
             resizeHandleGroup.visible = (highlightRect.width > 0 && highlightRect.height > 0)
             return
         }
+        var bounds = getNormalizedRectBounds(screenshotArea)
+        if (bounds.isValid) {
+            screenshotArea = Qt.rect(bounds.left, bounds.top, bounds.width, bounds.height)
+        }
         initialScreenshotArea = screenshotArea
         resizeHandleGroup.initialArea = Qt.rect(
             initialScreenshotArea.x - screenVirtualX,
@@ -276,17 +288,21 @@ Window {
         resizeHandleGroup.visible = true;
 
     }
-    // 鏈湴鍧愭爣 -> 铏氭嫙妗岄潰缁濆鍧愭爣
+    // 本地坐标 -> 虚拟桌面绝对坐标
     function toAbsX(localX) { return localX + screenVirtualX }
     function toAbsY(localY) { return localY + screenVirtualY }
 
-    // screenshotArea 鍦ㄦ湰绐楀彛鏈湴鍧愭爣涓殑绛変环鐭╁舰锛堢敤浜庣粯鍒讹級
+    // screenshotArea 在本窗口本地坐标中的等价矩形（用于绘制）
     readonly property rect localScreenshotArea: Qt.rect(
         screenshotArea.x - screenVirtualX,
         screenshotArea.y - screenVirtualY,
         screenshotArea.width,
         screenshotArea.height
     )
+    readonly property rect localNormalizedScreenshotArea: {
+        let b = getNormalizedRectBounds(localScreenshotArea)
+        return b.isValid ? Qt.rect(b.left, b.top, b.width, b.height) : Qt.rect(0, 0, 0, 0)
+    }
     readonly property rect localHighlightRect: Qt.rect(
         highlightRect.x - screenVirtualX,
         highlightRect.y - screenVirtualY,
@@ -438,6 +454,7 @@ Window {
         textPressMoved = false
         textClickAbsPoint = Qt.point(0, 0)
         textClickLocalPoint = Qt.point(0, 0)
+        dragMode = "none"
         clearHotkeyGesture()
         O_ScreenCapture.releaseDesktopSnapshot()
         root.visibility = Window.Hidden;
@@ -482,13 +499,13 @@ Window {
         z: 20
         captureRect: screenshotArea
         x: {
-            let areaLeft = localScreenshotArea.width >= 0 ? localScreenshotArea.x : localScreenshotArea.x + localScreenshotArea.width
-            let preferX  = areaLeft + Math.abs(localScreenshotArea.width) - width
+            let areaLeft = localNormalizedScreenshotArea.x
+            let preferX  = areaLeft + localNormalizedScreenshotArea.width - width
             return Math.max(0, Math.min(preferX, mainWin.width - width))
         }
         y: {
-            let areaTop = localScreenshotArea.height >= 0 ? localScreenshotArea.y : localScreenshotArea.y + localScreenshotArea.height
-            let belowY  = areaTop + Math.abs(localScreenshotArea.height) + 6
+            let areaTop = localNormalizedScreenshotArea.y
+            let belowY  = areaTop + localNormalizedScreenshotArea.height + 6
             return belowY + height > mainWin.height ? areaTop - height - 6 : belowY
         }
         onSignalCancel: {
@@ -505,10 +522,10 @@ Window {
         id: recordingBorder
         visible: O_GifRecordVM.isRecording
         // Draw border outside capture rect so it won't be included in recorded frames.
-        x: (localScreenshotArea.width  >= 0 ? localScreenshotArea.x : localScreenshotArea.x + localScreenshotArea.width) - 2
-        y: (localScreenshotArea.height >= 0 ? localScreenshotArea.y : localScreenshotArea.y + localScreenshotArea.height) - 2
-        width:  Math.abs(localScreenshotArea.width) + 4
-        height: Math.abs(localScreenshotArea.height) + 4
+        x: localNormalizedScreenshotArea.x - 2
+        y: localNormalizedScreenshotArea.y - 2
+        width:  localNormalizedScreenshotArea.width + 4
+        height: localNormalizedScreenshotArea.height + 4
         color: "transparent"
         border.color: "#EF4444"
         border.width: 2
@@ -553,31 +570,31 @@ Window {
                 strokeWidth: -1
                 fillColor: "#99000000"
                 startX: 0; startY: 0
-                // 澶栨锛堟暣涓獥鍙ｏ級
+                // 外框（整个窗口）
                 PathLine { x: mainWin.width; y: 0 }
                 PathLine { x: mainWin.width; y: mainWin.height }
                 PathLine { x: 0;            y: mainWin.height }
                 PathLine { x: 0;            y: 0 }
-                // 闀傜┖锛堥€夊尯锛屾湰鍦板潗鏍囷級
+                // 镂空（选区，本地坐标）
                 PathMove {
-                    x: localScreenshotArea.x
-                    y: localScreenshotArea.y
+                    x: localNormalizedScreenshotArea.x
+                    y: localNormalizedScreenshotArea.y
                 }
                 PathLine {
-                    x: localScreenshotArea.x + localScreenshotArea.width
-                    y: localScreenshotArea.y
+                    x: localNormalizedScreenshotArea.x + localNormalizedScreenshotArea.width
+                    y: localNormalizedScreenshotArea.y
                 }
                 PathLine {
-                    x: localScreenshotArea.x + localScreenshotArea.width
-                    y: localScreenshotArea.y + localScreenshotArea.height
+                    x: localNormalizedScreenshotArea.x + localNormalizedScreenshotArea.width
+                    y: localNormalizedScreenshotArea.y + localNormalizedScreenshotArea.height
                 }
                 PathLine {
-                    x: localScreenshotArea.x
-                    y: localScreenshotArea.y + localScreenshotArea.height
+                    x: localNormalizedScreenshotArea.x
+                    y: localNormalizedScreenshotArea.y + localNormalizedScreenshotArea.height
                 }
                 PathLine {
-                    x: localScreenshotArea.x
-                    y: localScreenshotArea.y
+                    x: localNormalizedScreenshotArea.x
+                    y: localNormalizedScreenshotArea.y
                 }
             }
         }
@@ -585,8 +602,8 @@ Window {
         TZLable {
             width: 80; height: 20
             visible: screenshotArea.width !== 0 && screenshotArea.height !== 0
-            x: localScreenshotArea.width  > 0 ? localScreenshotArea.x : localScreenshotArea.x + localScreenshotArea.width
-            y: localScreenshotArea.height > 0 ? localScreenshotArea.y - 25 : localScreenshotArea.y + localScreenshotArea.height - 25
+            x: localNormalizedScreenshotArea.x
+            y: localNormalizedScreenshotArea.y - 25
             lableText: qsTr("%1 * %2").arg(Math.abs(screenshotArea.width)).arg(Math.abs(screenshotArea.height))
         }
 
@@ -597,13 +614,13 @@ Window {
 
             // Toolbar position (local coordinates)
             x: {
-                let areaLeft = localScreenshotArea.width >= 0 ? localScreenshotArea.x : localScreenshotArea.x + localScreenshotArea.width
-                let preferX  = areaLeft + Math.abs(localScreenshotArea.width) - width
+                let areaLeft = localNormalizedScreenshotArea.x
+                let preferX  = areaLeft + localNormalizedScreenshotArea.width - width
                 return Math.max(0, Math.min(preferX, mainWin.width - width))
             }
             y: {
-                let areaTop = localScreenshotArea.height >= 0 ? localScreenshotArea.y : localScreenshotArea.y + localScreenshotArea.height
-                let belowY  = areaTop + Math.abs(localScreenshotArea.height) + 6
+                let areaTop = localNormalizedScreenshotArea.y
+                let belowY  = areaTop + localNormalizedScreenshotArea.height + 6
                 return belowY + height > mainWin.height ? areaTop - height - 6 : belowY
             }
 
@@ -784,7 +801,7 @@ Window {
                 initialScreenshotArea.height)
             z: 2
             onAreaChanged: {
-                // 杞洖缁濆鍧愭爣
+                // 转回绝对坐标
                 screenshotArea = Qt.rect(
                     area.x + screenVirtualX,
                     area.y + screenVirtualY,

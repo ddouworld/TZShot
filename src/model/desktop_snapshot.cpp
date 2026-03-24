@@ -14,9 +14,9 @@
 
 void DesktopSnapshot::grab()
 {
-    const QList<QScreen *> screens = QGuiApplication::screens();
-    if (screens.isEmpty()) {
-        qWarning() << "[DesktopSnapshot] 无法获取屏幕列表";
+    QScreen *primary = QGuiApplication::primaryScreen();
+    if (!primary) {
+        qWarning() << "[DesktopSnapshot] 无法获取主屏";
         return;
     }
 
@@ -25,48 +25,25 @@ void DesktopSnapshot::grab()
     QTimer::singleShot(50, &loop, &QEventLoop::quit);
     loop.exec();
 
-    // 用 QScreen::virtualGeometry() 获取每块屏幕在虚拟桌面坐标系中的位置。
-    // virtualGeometry() 使用主屏 DPR 作为基准（与 QML Screen.virtualX/width 对齐），
-    // 避免混合 DPI 场景下各屏 geometry() 坐标系不一致的问题。
-    m_virtualGeometry = QRect();
-    for (QScreen *s : screens)
-        m_virtualGeometry = m_virtualGeometry.united(s->virtualGeometry());
-
-    qDebug() << "[DesktopSnapshot] 检测到屏幕数：" << screens.size()
-             << "虚拟桌面逻辑矩形：" << m_virtualGeometry;
+    // 单屏模式：仅使用主屏坐标系。
+    m_virtualGeometry = primary->geometry();
+    qDebug() << "[DesktopSnapshot] 单屏模式，主屏逻辑矩形：" << m_virtualGeometry;
 
     // 创建与虚拟桌面等大的物理像素画布（以主屏 DPR 为基准）
     // 主屏 DPR 即虚拟桌面坐标系的缩放基准，与 QML 侧一致
-    const qreal baseDpr = QGuiApplication::primaryScreen()
-                        ? QGuiApplication::primaryScreen()->devicePixelRatio()
-                        : 1.0;
+    const qreal baseDpr = primary->devicePixelRatio();
 
     const int canvasW = qRound(m_virtualGeometry.width()  * baseDpr);
     const int canvasH = qRound(m_virtualGeometry.height() * baseDpr);
     m_snapshot = QImage(canvasW, canvasH, QImage::Format_ARGB32_Premultiplied);
     m_snapshot.fill(Qt::black);
 
-    // 逐屏抓图并合并到画布
+    // 仅抓取主屏
     QPainter painter(&m_snapshot);
-    for (QScreen *s : screens) {
-        QImage img = s->grabWindow(0).toImage();
-
-        // 该屏在虚拟桌面坐标系下的位置（已对齐主屏 DPR）
-        const int logOffX = s->virtualGeometry().x() - m_virtualGeometry.x();
-        const int logOffY = s->virtualGeometry().y() - m_virtualGeometry.y();
-
-        // 转换为物理像素偏移
-        const int physOffX = qRound(logOffX * baseDpr);
-        const int physOffY = qRound(logOffY * baseDpr);
-
-        // 将该屏快照缩放到 baseDpr 下的等效物理像素尺寸
-        const int physW = qRound(s->virtualGeometry().width()  * baseDpr);
-        const int physH = qRound(s->virtualGeometry().height() * baseDpr);
-        if (img.width() != physW || img.height() != physH)
-            img = img.scaled(physW, physH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-
-        painter.drawImage(physOffX, physOffY, img);
-    }
+    QImage img = primary->grabWindow(0).toImage();
+    if (img.width() != canvasW || img.height() != canvasH)
+        img = img.scaled(canvasW, canvasH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    painter.drawImage(0, 0, img);
     painter.end();
 
     qDebug() << "[DesktopSnapshot] 快照已缓存，尺寸："
@@ -200,8 +177,23 @@ void DesktopSnapshot::buildWindowList()
 struct EnumWindowsParam {
     QVector<QRect> *rects;
     QRect           snapshotRect;   /* 逻辑像素，用于裁剪 */
-    qreal           dpr;            /* 主屏 DPR，用于物理像素→逻辑像素转换 */
 };
+
+static qreal hwndScaleFactor(HWND hwnd)
+{
+    using GetDpiForWindowFn = UINT (WINAPI *)(HWND);
+    static GetDpiForWindowFn fn =
+        reinterpret_cast<GetDpiForWindowFn>(
+            GetProcAddress(GetModuleHandleW(L"user32.dll"), "GetDpiForWindow"));
+    if (fn) {
+        const UINT dpi = fn(hwnd);
+        if (dpi > 0)
+            return qreal(dpi) / 96.0;
+    }
+    return QGuiApplication::primaryScreen()
+               ? QGuiApplication::primaryScreen()->devicePixelRatio()
+               : 1.0;
+}
 
 static BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
 {
@@ -221,11 +213,12 @@ static BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     int h = rc.bottom - rc.top;
     if (w < 10 || h < 10)             return TRUE;
 
-    /* GetWindowRect 返回物理像素坐标，转换为逻辑像素（对齐 Qt 坐标系）*/
-    QRect r(qRound(rc.left   / param->dpr),
-            qRound(rc.top    / param->dpr),
-            qRound(w         / param->dpr),
-            qRound(h         / param->dpr));
+    /* GetWindowRect 返回物理像素坐标，按窗口自身 DPI 换算逻辑坐标 */
+    const qreal scale = hwndScaleFactor(hwnd);
+    QRect r(qRound(rc.left / scale),
+            qRound(rc.top / scale),
+            qRound(w / scale),
+            qRound(h / scale));
     r = r.intersected(param->snapshotRect);
     if (!r.isEmpty())
         param->rects->append(r); /* EnumWindows 本身按 Z 序(顶->底)枚举，append 才能保持从顶到底 */
@@ -237,11 +230,7 @@ void DesktopSnapshot::buildWindowList()
 {
     m_windowRects.clear();
 
-    const qreal dpr = QGuiApplication::primaryScreen()
-                    ? QGuiApplication::primaryScreen()->devicePixelRatio()
-                    : 1.0;
-
-    EnumWindowsParam param { &m_windowRects, m_virtualGeometry, dpr };
+    EnumWindowsParam param { &m_windowRects, m_virtualGeometry };
     EnumWindows(enumWindowsProc, reinterpret_cast<LPARAM>(&param));
 
     qDebug() << "[DesktopSnapshot] 枚举到顶层窗口数：" << m_windowRects.size();

@@ -21,9 +21,6 @@ TZWindow {
     property var longCaptureFrameComponent: null
     property rect pendingLongCaptureRect: Qt.rect(0, 0, 0, 0)
 
-    property var overlayList: []
-    property var overlayComponent: null
-
     function _prepareSessionState() {
         captureUiReady = false
         root.opacity = 0.0
@@ -58,7 +55,6 @@ TZWindow {
 
     function startScreenshot() {
         root.visibility = Window.Hidden
-        _destroyOverlays()
         _prepareSessionState()
 
         Qt.callLater(function() {
@@ -68,19 +64,15 @@ TZWindow {
             if (screens.length === 0)
                 return
 
-            var primaryIdx = 0
-            for (var i = 0; i < screens.length; i++) {
-                if (screens[i].virtualX === 0 && screens[i].virtualY === 0) {
-                    primaryIdx = i
-                    break
-                }
-            }
-            var primary = screens[primaryIdx]
+            // Single-screen mode: always use the first screen as capture target.
+            var primary = screens[0]
 
-            root.screenVirtualX = primary.virtualX
-            root.screenVirtualY = primary.virtualY
-            root.x = primary.virtualX
-            root.y = primary.virtualY
+            var vx = (primary.virtualX !== undefined) ? primary.virtualX : 0
+            var vy = (primary.virtualY !== undefined) ? primary.virtualY : 0
+            root.screenVirtualX = vx
+            root.screenVirtualY = vy
+            root.x = vx
+            root.y = vy
             root.width = primary.width
             root.height = primary.height
 
@@ -88,36 +80,6 @@ TZWindow {
                 root.paintBoard,
                 Qt.rect(root.screenVirtualX, root.screenVirtualY, root.width, root.height)
             )
-
-            if (overlayComponent === null)
-                overlayComponent = Qt.createComponent("qrc:/qml/TZScreenOverlay.qml")
-
-            var newList = []
-            for (var j = 0; j < screens.length; j++) {
-                if (j === primaryIdx)
-                    continue
-
-                var sc = screens[j]
-                if (overlayComponent.status === Component.Ready) {
-                    var ov = overlayComponent.createObject(null, {
-                        "delegate": root,
-                        "screenVX": sc.virtualX,
-                        "screenVY": sc.virtualY,
-                        "x": sc.virtualX,
-                        "y": sc.virtualY,
-                        "width": sc.width,
-                        "height": sc.height,
-                        "visibility": Window.Windowed
-                    })
-                    if (ov) {
-                        ov.raise()
-                        newList.push(ov)
-                    }
-                } else if (overlayComponent.status === Component.Error) {
-                    console.error("TZScreenOverlay load failed:", overlayComponent.errorString())
-                }
-            }
-            overlayList = newList
 
             root.visibility = Window.Windowed
             root.raise()
@@ -129,12 +91,6 @@ TZWindow {
                 })
             })
         })
-    }
-
-    function _destroyOverlays() {
-        for (var i = 0; i < overlayList.length; i++)
-            overlayList[i].destroy()
-        overlayList = []
     }
 
     function showLongCaptureBar() {
@@ -247,7 +203,6 @@ TZWindow {
     }
 
     function resetArea() {
-        _destroyOverlays()
         _prepareSessionState()
         O_ScreenCapture.releaseDesktopSnapshot()
         root.visibility = Window.Hidden

@@ -3,7 +3,6 @@
         <file>qml/main.qml</file>
         <file>qml/TZStickyWindow.qml</file>
         <file>qml/TZWindow.qml</file>
-        <file>qml/TZScreenOverlay.qml</file>
         <file>qml/TZLable.qml</file>
         <file>qml/TZTool.qml</file>
         <file>qml/TZResizeHandle.qml</file>

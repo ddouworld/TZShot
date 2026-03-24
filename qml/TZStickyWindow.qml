@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Window
 import Qt.labs.platform 1.0 as Platform
 import QtQuick.Effects
@@ -37,6 +37,7 @@ Window {
 
     readonly property int displayW: Math.max(1, Math.round(imageBaseW * zoomFactor))
     readonly property int displayH: Math.max(1, Math.round(imageBaseH * zoomFactor))
+    readonly property int toolbarContentWidth: Math.max(560, stickyRow.implicitWidth + 16)
 
     readonly property int stickyShapeType: {
         switch (activeTool) {
@@ -49,7 +50,7 @@ Window {
         }
     }
 
-    width: displayW + shadowRadius * 2
+    width: Math.max(displayW + shadowRadius * 2, toolbarContentWidth + 16)
     height: displayH + shadowRadius * 2 + shadowOffset + toolbarGap + toolbarHeight + toolbarTipGap + toolbarTipHeight + 4
     x: (imgRect.width >= 0 ? imgRect.x : imgRect.x + imgRect.width) - shadowRadius
     y: (imgRect.height >= 0 ? imgRect.y : imgRect.y + imgRect.height) - shadowRadius
@@ -301,7 +302,7 @@ Window {
         id: stickyToolbar
         z: 30
         visible: stickyWin.toolbarVisible
-        width: Math.min(stickyWin.width - 16, Math.max(560, stickyRow.implicitWidth + 16))
+        width: stickyWin.toolbarContentWidth
         height: stickyWin.toolbarHeight
         radius: 10
         color: "#FFFFFF"
@@ -388,7 +389,7 @@ Window {
                         var img = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)
                         if (img && img.width > 0 && img.height > 0)
                             stickyPaintBoard.setBackgroundImg(img)
-                        stickyWin.activeTool = "mosaic"
+                        stickyWin.setActiveTool("mosaic")
                         if (stickyWin.activeTool === "mosaic" && !stickyPaintBoard.hasBackgroundImg()) {
                             Qt.callLater(function() {
                                 var retryImg = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)

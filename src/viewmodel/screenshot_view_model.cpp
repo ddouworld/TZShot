@@ -157,14 +157,15 @@ QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
     PaintBoard *board = qobject_cast<PaintBoard*>(paintBoard);
 
     QImage screenshot;
+    qreal scaleX = 1.0;
+    qreal scaleY = 1.0;
 
     if (!m_snapshot.isNull()) {
         // 快照坐标系：逻辑坐标相对于虚拟桌面原点；物理像素按统一 DPR 缩放。
         // 将逻辑选区映射到快照物理像素矩形后裁剪。
         const QRect vg = m_snapshot.virtualGeometry();
-        const qreal scaleX = vg.width()  > 0 ? qreal(m_snapshot.image().width())  / qreal(vg.width())  : 1.0;
-        const qreal scaleY = vg.height() > 0 ? qreal(m_snapshot.image().height()) / qreal(vg.height()) : 1.0;
-
+        scaleX = vg.width()  > 0 ? qreal(m_snapshot.image().width())  / qreal(vg.width())  : 1.0;
+        scaleY = vg.height() > 0 ? qreal(m_snapshot.image().height()) / qreal(vg.height()) : 1.0;
         const QRect physRect = rect.isEmpty()
             ? m_snapshot.image().rect()
             : QRect(qRound((rect.x() - vg.x()) * scaleX),
@@ -182,8 +183,18 @@ QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
     }
 
     if (board) {
-        const QImage annotations = board->renderToImage();
+        QImage annotations = board->renderToImage();
         if (!annotations.isNull()) {
+            // 标注层是逻辑像素，先映射到物理像素坐标系，避免高 DPI 下偏移。
+            const QSize physicalAnnoSize(
+                qMax(1, qRound(annotations.width() * scaleX)),
+                qMax(1, qRound(annotations.height() * scaleY)));
+            if (annotations.size() != physicalAnnoSize) {
+                annotations = annotations.scaled(physicalAnnoSize,
+                                                 Qt::IgnoreAspectRatio,
+                                                 Qt::SmoothTransformation);
+            }
+
             QPainter p(&screenshot);
 
             // PaintBoard 现在是全屏画布：导出选区时，需要从全屏标注层裁剪对应区域再叠加
@@ -194,8 +205,8 @@ QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
                 const int boardAbsX  = windowAbsX + qRound(board->x());
                 const int boardAbsY  = windowAbsY + qRound(board->y());
 
-                const int wantX = rect.x() - boardAbsX;
-                const int wantY = rect.y() - boardAbsY;
+                const int wantX = qRound((rect.x() - boardAbsX) * scaleX);
+                const int wantY = qRound((rect.y() - boardAbsY) * scaleY);
                 QRect srcRect(wantX, wantY, screenshot.width(), screenshot.height());
                 srcRect = srcRect.intersected(annotations.rect());
 
@@ -209,8 +220,19 @@ QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
             }
         }
 
-        if (setBackground)
-            board->setBackgroundImg(screenshot);
+        if (setBackground) {
+            // PaintBoard 背景图使用逻辑像素尺寸，避免高 DPI 下比例异常。
+            QImage logicalBackground = screenshot;
+            const QSize logicalSize(
+                qMax(1, qRound(screenshot.width() / scaleX)),
+                qMax(1, qRound(screenshot.height() / scaleY)));
+            if (logicalBackground.size() != logicalSize) {
+                logicalBackground = logicalBackground.scaled(logicalSize,
+                                                             Qt::IgnoreAspectRatio,
+                                                             Qt::SmoothTransformation);
+            }
+            board->setBackgroundImg(logicalBackground);
+        }
     }
 
     return screenshot;
