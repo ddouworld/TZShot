@@ -6,8 +6,12 @@ QtObject {
     property rect area: Qt.rect(0, 0, 0, 0)
     property rect initialArea: Qt.rect(0, 0, 0, 0)
     property point dragOffset: Qt.point(0, 0)
-    property string dragMode: "none" // none | select | move
+    property string dragMode: "none" // none | select | move | expand
     property var coordinateItem: null
+    property bool expandLeft: false
+    property bool expandRight: false
+    property bool expandTop: false
+    property bool expandBottom: false
 
     readonly property rect localArea: {
         if (!coordinateItem)
@@ -102,6 +106,22 @@ QtObject {
         initialArea = area
     }
 
+    function beginExpand(ax, ay) {
+        const bounds = getNormalizedRectBounds(area)
+        if (!bounds.isValid) {
+            beginSelection(ax, ay)
+            return
+        }
+
+        dragMode = "expand"
+        initialArea = Qt.rect(bounds.left, bounds.top, bounds.width, bounds.height)
+        area = initialArea
+        expandLeft = ax < bounds.left
+        expandRight = ax > bounds.right
+        expandTop = ay < bounds.top
+        expandBottom = ay > bounds.bottom
+    }
+
     function updateMove(ax, ay) {
         const dx = ax - dragOffset.x
         const dy = ay - dragOffset.y
@@ -126,6 +146,28 @@ QtObject {
         )
     }
 
+    function updateExpand(ax, ay) {
+        const bounds = getNormalizedRectBounds(initialArea)
+        if (!bounds.isValid)
+            return
+
+        let left = bounds.left
+        let right = bounds.right
+        let top = bounds.top
+        let bottom = bounds.bottom
+
+        if (expandLeft)
+            left = Math.min(ax, right)
+        if (expandRight)
+            right = Math.max(ax, left)
+        if (expandTop)
+            top = Math.min(ay, bottom)
+        if (expandBottom)
+            bottom = Math.max(ay, top)
+
+        area = Qt.rect(left, top, right - left, bottom - top)
+    }
+
     function normalizeCurrentArea() {
         const bounds = getNormalizedRectBounds(area)
         if (bounds.isValid) {
@@ -136,6 +178,10 @@ QtObject {
 
     function endInteraction() {
         dragMode = "none"
+        expandLeft = false
+        expandRight = false
+        expandTop = false
+        expandBottom = false
     }
 
     function reset() {
@@ -143,5 +189,9 @@ QtObject {
         initialArea = Qt.rect(0, 0, 0, 0)
         dragOffset = Qt.point(0, 0)
         dragMode = "none"
+        expandLeft = false
+        expandRight = false
+        expandTop = false
+        expandBottom = false
     }
 }

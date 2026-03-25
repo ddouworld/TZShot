@@ -116,11 +116,8 @@ Window {
             tool.visible = false
             resizeHandleGroup.visible = false
             hideTextEditor()
-            var winRect = O_ScreenCapture.windowAtPoint(ax, ay)
-            highlightRect = winRect.width > 0
-                ? Qt.rect(winRect.x, winRect.y, winRect.width, winRect.height)
-                : Qt.rect(0, 0, 0, 0)
-            selectionOverlay.beginSelection(ax, ay)
+            highlightRect = Qt.rect(0, 0, 0, 0)
+            selectionOverlay.beginExpand(ax, ay)
             return
         }
 
@@ -154,6 +151,12 @@ Window {
 
         if (dragMode === "select") {
             selectionOverlay.updateSelection(ax, ay, modifiers)
+            if (tool.visible) tool.visible = false
+            return
+        }
+
+        if (dragMode === "expand") {
+            selectionOverlay.updateExpand(ax, ay)
             if (tool.visible) tool.visible = false
         }
     }
