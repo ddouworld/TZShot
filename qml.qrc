@@ -1,13 +1,28 @@
 <RCC>
     <qresource prefix="/">
         <file>qml/main.qml</file>
-        <file>qml/TZStickyWindow.qml</file>
-        <file>qml/TZWindow.qml</file>
-        <file>qml/TZLable.qml</file>
-        <file>qml/TZTool.qml</file>
-        <file>qml/TZResizeHandle.qml</file>
-        <file>qml/TZResizeHandleGroup.qml</file>
-        <file>qml/TZChat.qml</file>
+        <file>qml/Capture/TZWindow.qml</file>
+        <file>qml/Capture/TZSelectionOverlay.qml</file>
+        <file>qml/Capture/TZCaptureInputController.qml</file>
+        <file>qml/Capture/TZHotkeyGestureController.qml</file>
+        <file>qml/Capture/TZRectMaskOverlay.qml</file>
+        <file>qml/Capture/TZSelectionPositioner.qml</file>
+        <file>qml/Capture/TZSelectionInfoLabel.qml</file>
+        <file>qml/Capture/TZTextAnnotationEditor.qml</file>
+        <file>qml/Capture/TZWindowHighlightOverlay.qml</file>
+        <file>qml/Capture/TZWindowFactory.qml</file>
+        <file>qml/Capture/TZLable.qml</file>
+        <file>qml/Capture/TZTool.qml</file>
+        <file>qml/Capture/TZResizeHandle.qml</file>
+        <file>qml/Capture/TZResizeHandleGroup.qml</file>
+        <file>qml/Capture/TZMarkToolInfo.qml</file>
+        <file>qml/Capture/TZMagnifyingGlass.qml</file>
+        <file>qml/Capture/TZGifRecordBar.qml</file>
+        <file>qml/Windows/TZStickyWindow.qml</file>
+        <file>qml/Windows/TZStickyExtraToolBar.qml</file>
+        <file>qml/Windows/TZOcrResult.qml</file>
+        <file>qml/Windows/TZChat.qml</file>
+        <file>qml/Windows/TZLoadingSpinner.qml</file>
         <file>qml/Setting/TZSettingWin.qml</file>
         <file>qml/Setting/TZGeneralSettings.qml</file>
         <file>qml/Setting/TZRightPanel.qml</file>
@@ -29,19 +44,14 @@
         <file>resource/img/lc_highlighter.svg</file>
         <file>resource/img/lc_undo.svg</file>
         <file>resource/img/tray_icon.svg</file>
-        <file>qml/TZMarkToolInfo.qml</file>
-        <file>qml/TZMagnifyingGlass.qml</file>
         <file>resource/img/lc_close.svg</file>
         <file>resource/img/lc_chat.svg</file>
         <file>resource/img/lc_emoji.svg</file>
         <file>resource/img/lc_file.svg</file>
         <file>resource/img/lc_send.svg</file>
-        <file>qml/TZLoadingSpinner.qml</file>
-        <file>qml/TZGifRecordBar.qml</file>
-        <file>qml/TZOcrResult.qml</file>
-        <file>qml/TZLongCaptureBar.qml</file>
-        <file>qml/TZLongCapturePreview.qml</file>
-        <file>qml/TZLongCaptureFrame.qml</file>
+        <file>qml/LongCapture/TZLongCaptureBar.qml</file>
+        <file>qml/LongCapture/TZLongCapturePreview.qml</file>
+        <file>qml/LongCapture/TZLongCaptureFrame.qml</file>
         <file>resource/img/lc_gif_record.svg</file>
         <file>resource/img/lc_gif_stop.svg</file>
         <file>resource/img/lc_ocr.svg</file>

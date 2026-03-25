@@ -1,6 +1,14 @@
-#include "sticky_view_model.h"
+﻿#include "sticky_view_model.h"
 #include <QPainter>
 #include <QTransform>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QWindow>
+#include <QDebug>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 
 StickyViewModel::StickyViewModel(StickyImageStore &store, QObject *parent)
     : QObject(parent)
@@ -10,13 +18,67 @@ StickyViewModel::StickyViewModel(StickyImageStore &store, QObject *parent)
 
 void StickyViewModel::requestSticky(const QString &imageUrl, const QRect &imgRect)
 {
-    if (imageUrl.isEmpty()) return;
-    emit stickyReady(imageUrl, imgRect);
+    if (imageUrl.isEmpty()) {
+        return;
+    }
+
+    QRect targetRect = imgRect.normalized();
+    QImage image = m_store.getImageByUrl(imageUrl);
+    if (!image.isNull()) {
+        QScreen *screen = QGuiApplication::screenAt(targetRect.topLeft());
+        if (!screen) {
+            screen = QGuiApplication::screenAt(targetRect.center());
+        }
+        if (!screen) {
+            screen = QGuiApplication::primaryScreen();
+        }
+
+        const qreal dpr = screen ? screen->devicePixelRatio() : 1.0;
+        if (dpr > 0.0) {
+            if (!qFuzzyCompare(image.devicePixelRatio(), dpr)) {
+                image.setDevicePixelRatio(dpr);
+                m_store.replaceImage(imageUrl, image);
+            }
+            const QSize logicalSize(qMax(1, qRound(image.width() / dpr)),
+                                    qMax(1, qRound(image.height() / dpr)));
+            targetRect.setSize(logicalSize);
+        }
+    }
+
+    emit stickyReady(imageUrl, targetRect);
 }
 
 void StickyViewModel::releaseImage(const QString &imageUrl)
 {
     m_store.releaseImage(imageUrl);
+}
+
+void StickyViewModel::positionStickyWindow(QObject *windowObject, const QRect &imgRect) const
+{
+    auto *window = qobject_cast<QWindow*>(windowObject);
+    if (!window) {
+        return;
+    }
+
+    const QRect targetRect = imgRect.normalized();
+    const QPoint topLeft = targetRect.topLeft();
+
+    window->setPosition(topLeft);
+
+#ifdef Q_OS_WIN
+    if (HWND hwnd = reinterpret_cast<HWND>(window->winId())) {
+        RECT rect{};
+        GetWindowRect(hwnd, &rect);
+        qDebug() << "[StickyHWND] qt-pos:"
+                 << topLeft
+                 << "hwnd:"
+                 << QRect(rect.left,
+                          rect.top,
+                          rect.right - rect.left,
+                          rect.bottom - rect.top)
+                 << "qmlPos:" << window->x() << window->y();
+    }
+#endif
 }
 
 bool StickyViewModel::saveImage(const QString &imageUrl, const QUrl &targetUrl)

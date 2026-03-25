@@ -84,6 +84,7 @@ x64/
 x86/
 [Bb]uild/
 [Bb]uild*/
+dist/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake

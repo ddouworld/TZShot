@@ -1,13 +1,51 @@
-#include "screenshot_view_model.h"
+﻿#include "screenshot_view_model.h"
 #include "paint_board/paint_board.h"
 
 #include <QBuffer>
 #include <QClipboard>
+#include <QDebug>
 #include <QGuiApplication>
 #include <QPainter>
-#include <QScreen>
-#include <QDebug>
 #include <QQuickWindow>
+#include <QScreen>
+#include <QWindow>
+
+namespace {
+
+qreal captureDprForRect(const QRect& rect)
+{
+#ifdef Q_OS_WIN
+    if (QScreen* screen = QGuiApplication::screenAt(rect.center())) {
+        return screen->devicePixelRatio();
+    }
+#endif
+    if (QScreen* screen = QGuiApplication::primaryScreen()) {
+        return screen->devicePixelRatio();
+    }
+    return 1.0;
+}
+
+QRect captureRectInSnapshot(const DesktopSnapshot& snapshot, const QRect& rect, qreal dpr)
+{
+    if (snapshot.isNull()) {
+        return {};
+    }
+
+    if (rect.isEmpty()) {
+        return snapshot.image().rect();
+    }
+
+    const QRect localRect = rect.translated(-snapshot.virtualGeometry().topLeft());
+    const QPoint topLeft = QPoint(qRound(localRect.left() * dpr),
+                                  qRound(localRect.top() * dpr));
+    const QPoint bottomRight = QPoint(qRound(localRect.right() * dpr),
+                                      qRound(localRect.bottom() * dpr));
+    QRect target;
+    target.setCoords(topLeft.x(), topLeft.y(), bottomRight.x(), bottomRight.y());
+    return target.intersected(snapshot.image().rect());
+}
+
+}
 
 ScreenshotViewModel::ScreenshotViewModel(DesktopSnapshot  &snapshot,
                                          StickyImageStore &stickyStore,
@@ -18,118 +56,120 @@ ScreenshotViewModel::ScreenshotViewModel(DesktopSnapshot  &snapshot,
 {
 }
 
-// ── captureDesktop ────────────────────────────────────────
+QRect ScreenshotViewModel::captureRectForDisplay(const QRect &rect) const
+{
+    const QRect r = rect.normalized();
+    if (r.isEmpty() || m_snapshot.isNull()) {
+        return {};
+    }
+    return captureRectInSnapshot(m_snapshot, r, captureDprForRect(r));
+}
+
 void ScreenshotViewModel::captureDesktop()
 {
     m_snapshot.grab();
 }
 
-// ── releaseDesktopSnapshot ────────────────────────────────
 void ScreenshotViewModel::releaseDesktopSnapshot()
 {
     m_snapshot.release();
 }
 
-// ── getPixelColor ─────────────────────────────────────────
 QColor ScreenshotViewModel::getPixelColor(int x, int y) const
 {
     return m_snapshot.pixelColor(x, y);
 }
 
-// ── windowAtPoint ─────────────────────────────────────────
 QRect ScreenshotViewModel::windowAtPoint(int x, int y) const
 {
     return m_snapshot.windowAtPoint(x, y);
 }
 
-// ── captureRectToClipboard ────────────────────────────────
 bool ScreenshotViewModel::captureRectToClipboard(QQuickItem *paintBoard, const QRect &rect)
 {
     const QRect r = rect.normalized();
     if (r.isEmpty()) {
-        qWarning() << "[ScreenshotViewModel] 截图区域为空";
+        qWarning() << "[ScreenshotViewModel] capture area is empty";
         return false;
     }
+
     QImage img = captureScreen(paintBoard, r);
     if (img.isNull()) {
-        qWarning() << "[ScreenshotViewModel] 截图失败，捕获到空图片";
+        qWarning() << "[ScreenshotViewModel] failed to capture image";
         return false;
     }
+
     return writeImageToClipboard(img);
 }
 
-// ── captureRectToBase64 ───────────────────────────────────
 QString ScreenshotViewModel::captureRectToBase64(QQuickItem *paintBoard, const QRect &rect)
 {
     const QRect r = rect.normalized();
     if (r.isEmpty()) {
-        qWarning() << "[ScreenshotViewModel] 截图区域为空";
+        qWarning() << "[ScreenshotViewModel] capture area is empty";
         return {};
     }
+
     QImage img = captureScreen(paintBoard, r);
     if (img.isNull()) {
-        qWarning() << "[ScreenshotViewModel] 截图失败，捕获到空图片";
+        qWarning() << "[ScreenshotViewModel] failed to capture image";
         return {};
     }
+
     QByteArray data;
-    QBuffer    buf(&data);
+    QBuffer buf(&data);
     buf.open(QIODevice::WriteOnly);
     if (!img.save(&buf, "PNG")) {
-        qWarning() << "[ScreenshotViewModel] PNG 编码失败";
+        qWarning() << "[ScreenshotViewModel] failed to encode PNG";
         return {};
     }
     return data.toBase64();
 }
 
-// ── captureRectToStickyUrl ────────────────────────────────
 QString ScreenshotViewModel::captureRectToStickyUrl(QQuickItem *paintBoard, const QRect &rect)
 {
     const QRect r = rect.normalized();
     if (r.isEmpty()) {
-        qWarning() << "[ScreenshotViewModel] 贴图区域为空";
+        qWarning() << "[ScreenshotViewModel] sticky area is empty";
         return {};
     }
+
     QImage img = captureScreen(paintBoard, r);
     if (img.isNull()) {
-        qWarning() << "[ScreenshotViewModel] 贴图截图失败";
+        qWarning() << "[ScreenshotViewModel] failed to capture sticky image";
         return {};
     }
+
     return m_stickyStore.storeImage(img);
 }
 
-// ── grabToPaintBoard ──────────────────────────────────────
 void ScreenshotViewModel::grabToPaintBoard(QQuickItem *paintBoard, const QRect &rect)
 {
     const QRect r = rect.normalized();
-    if (r.isEmpty()) return;
-    captureScreen(paintBoard, r, /*setBackground=*/true);
+    if (r.isEmpty()) {
+        return;
+    }
+    captureScreen(paintBoard, r, true);
 }
 
-// ── captureRectToImage ────────────────────────────────────
 QImage ScreenshotViewModel::captureRectToImage(const QRect &rect)
 {
     const QRect r = rect.normalized();
     if (r.isEmpty()) {
-        qWarning() << "[ScreenshotViewModel] OCR 区域为空";
+        qWarning() << "[ScreenshotViewModel] OCR area is empty";
         return {};
     }
 
     if (!m_snapshot.isNull()) {
-        const QRect vg = m_snapshot.virtualGeometry();
-        const qreal scaleX = vg.width()  > 0 ? qreal(m_snapshot.image().width())  / qreal(vg.width())  : 1.0;
-        const qreal scaleY = vg.height() > 0 ? qreal(m_snapshot.image().height()) / qreal(vg.height()) : 1.0;
-
-        const QRect physRect = QRect(qRound((r.x() - vg.x()) * scaleX),
-                                     qRound((r.y() - vg.y()) * scaleY),
-                                     qRound(r.width()  * scaleX),
-                                     qRound(r.height() * scaleY))
-                                  .intersected(m_snapshot.image().rect());
-        return m_snapshot.image().copy(physRect);
+        const QRect captureRect = captureRectInSnapshot(m_snapshot, r, captureDprForRect(r));
+        return m_snapshot.image().copy(captureRect).toImage();
     }
 
-    qWarning() << "[ScreenshotViewModel] 快照未缓存，OCR 回退到实时抓屏（仅主屏）";
+    qWarning() << "[ScreenshotViewModel] snapshot unavailable, falling back to primary screen";
     QScreen *screen = QGuiApplication::primaryScreen();
-    if (!screen) return {};
+    if (!screen) {
+        return {};
+    }
     return screen->grabWindow(0, r.x(), r.y(), r.width(), r.height()).toImage();
 }
 
@@ -149,7 +189,6 @@ bool ScreenshotViewModel::copyImageToClipboard(const QImage &image)
     return writeImageToClipboard(image);
 }
 
-// ── captureScreen (private) ───────────────────────────────
 QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
                                           const QRect &rect,
                                           bool setBackground)
@@ -157,93 +196,86 @@ QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
     PaintBoard *board = qobject_cast<PaintBoard*>(paintBoard);
 
     QImage screenshot;
-    qreal scaleX = 1.0;
-    qreal scaleY = 1.0;
+    qreal dpr = 1.0;
 
     if (!m_snapshot.isNull()) {
-        // 快照坐标系：逻辑坐标相对于虚拟桌面原点；物理像素按统一 DPR 缩放。
-        // 将逻辑选区映射到快照物理像素矩形后裁剪。
-        const QRect vg = m_snapshot.virtualGeometry();
-        scaleX = vg.width()  > 0 ? qreal(m_snapshot.image().width())  / qreal(vg.width())  : 1.0;
-        scaleY = vg.height() > 0 ? qreal(m_snapshot.image().height()) / qreal(vg.height()) : 1.0;
-        const QRect physRect = rect.isEmpty()
-            ? m_snapshot.image().rect()
-            : QRect(qRound((rect.x() - vg.x()) * scaleX),
-                    qRound((rect.y() - vg.y()) * scaleY),
-                    qRound(rect.width()  * scaleX),
-                    qRound(rect.height() * scaleY))
-                  .intersected(m_snapshot.image().rect());
-
-        screenshot = m_snapshot.image().copy(physRect);
+        if (board && board->window()) {
+            dpr = board->window()->devicePixelRatio();
+        } else if (!rect.isEmpty()) {
+            dpr = captureDprForRect(rect);
+        }
+        const QRect captureRect = captureRectInSnapshot(m_snapshot, rect, dpr);
+        screenshot = m_snapshot.image().copy(captureRect).toImage();
     } else {
-        qWarning() << "[ScreenshotViewModel] 快照未缓存，回退到实时抓屏（仅主屏）";
+        qWarning() << "[ScreenshotViewModel] snapshot unavailable, falling back to primary screen";
         QScreen *screen = QGuiApplication::primaryScreen();
-        if (!screen) return {};
+        if (!screen) {
+            return {};
+        }
         screenshot = screen->grabWindow(0).toImage();
     }
 
     if (board) {
         QImage annotations = board->renderToImage();
         if (!annotations.isNull()) {
-            // 标注层是逻辑像素，先映射到物理像素坐标系，避免高 DPI 下偏移。
-            const QSize physicalAnnoSize(
-                qMax(1, qRound(annotations.width() * scaleX)),
-                qMax(1, qRound(annotations.height() * scaleY)));
-            if (annotations.size() != physicalAnnoSize) {
-                annotations = annotations.scaled(physicalAnnoSize,
-                                                 Qt::IgnoreAspectRatio,
-                                                 Qt::SmoothTransformation);
-            }
-
             QPainter p(&screenshot);
 
-            // PaintBoard 现在是全屏画布：导出选区时，需要从全屏标注层裁剪对应区域再叠加
             if (!rect.isEmpty()) {
                 QQuickWindow *win = board->window();
                 const int windowAbsX = win ? win->x() : 0;
                 const int windowAbsY = win ? win->y() : 0;
-                const int boardAbsX  = windowAbsX + qRound(board->x());
-                const int boardAbsY  = windowAbsY + qRound(board->y());
+                const int boardAbsX = windowAbsX + qRound(board->x());
+                const int boardAbsY = windowAbsY + qRound(board->y());
 
-                const int wantX = qRound((rect.x() - boardAbsX) * scaleX);
-                const int wantY = qRound((rect.y() - boardAbsY) * scaleY);
-                QRect srcRect(wantX, wantY, screenshot.width(), screenshot.height());
+                const int sourceX = rect.x() - boardAbsX;
+                const int sourceY = rect.y() - boardAbsY;
+                QRect srcRect(sourceX, sourceY, rect.width(), rect.height());
                 srcRect = srcRect.intersected(annotations.rect());
 
                 if (!srcRect.isEmpty()) {
-                    const int dstX = srcRect.x() - wantX;
-                    const int dstY = srcRect.y() - wantY;
-                    p.drawImage(QPoint(dstX, dstY), annotations, srcRect);
+                    const int dstX = qRound((srcRect.x() - sourceX) * dpr);
+                    const int dstY = qRound((srcRect.y() - sourceY) * dpr);
+                    const int dstW = qMax(1, qRound(srcRect.width() * dpr));
+                    const int dstH = qMax(1, qRound(srcRect.height() * dpr));
+                    p.drawImage(QRect(dstX, dstY, dstW, dstH),
+                                annotations,
+                                srcRect);
                 }
             } else {
                 p.drawImage(0, 0, annotations);
             }
+            p.end();
         }
 
         if (setBackground) {
-            // PaintBoard 背景图使用逻辑像素尺寸，避免高 DPI 下比例异常。
-            QImage logicalBackground = screenshot;
-            const QSize logicalSize(
-                qMax(1, qRound(screenshot.width() / scaleX)),
-                qMax(1, qRound(screenshot.height() / scaleY)));
-            if (logicalBackground.size() != logicalSize) {
-                logicalBackground = logicalBackground.scaled(logicalSize,
-                                                             Qt::IgnoreAspectRatio,
-                                                             Qt::SmoothTransformation);
+            QImage background = screenshot;
+            if (board->window() && board->window()->devicePixelRatio() > 1.0) {
+                const QSize logicalSize(qRound(background.width() / board->window()->devicePixelRatio()),
+                                        qRound(background.height() / board->window()->devicePixelRatio()));
+                if (logicalSize.isValid() && logicalSize != background.size()) {
+                    background = background.scaled(logicalSize,
+                                                   Qt::IgnoreAspectRatio,
+                                                   Qt::SmoothTransformation);
+                }
             }
-            board->setBackgroundImg(logicalBackground);
+            board->setBackgroundImg(background);
         }
     }
 
     return screenshot;
 }
 
-// ── writeImageToClipboard (private) ──────────────────────
 bool ScreenshotViewModel::writeImageToClipboard(const QImage &image)
 {
-    if (image.isNull()) return false;
+    if (image.isNull()) {
+        return false;
+    }
+
     QClipboard *cb = QGuiApplication::clipboard();
-    if (!cb) return false;
+    if (!cb) {
+        return false;
+    }
+
     cb->setImage(image, QClipboard::Clipboard);
 #ifdef Q_OS_LINUX
     cb->setImage(image, QClipboard::Selection);

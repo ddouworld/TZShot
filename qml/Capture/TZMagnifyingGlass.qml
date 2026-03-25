@@ -50,7 +50,7 @@ Rectangle {
             // cache: false 确保每次坐标变化时重新请求图像
             cache: false
             // source 用时间戳 +坐标，强制 QML 重新加载
-            source: root.visibility === Window.FullScreen
+            source: magnifier.visible
                     ? ("image://magnifier/" + magnifierAbsX + "," + magnifierAbsY + "?t=" + Date.now())
                     : ""
             fillMode: Image.Stretch

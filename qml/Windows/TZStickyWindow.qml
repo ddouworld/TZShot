@@ -1,10 +1,11 @@
-import QtQuick
+﻿import QtQuick
 import QtQuick.Window
 import Qt.labs.platform 1.0 as Platform
 import QtQuick.Effects
 import QtQuick.Controls.Basic
 import QtCore
 import CustomComponents 1.0
+import "../Capture"
 
 Window {
     id: stickyWin
@@ -24,6 +25,9 @@ Window {
     property bool contextMenuOpen: false
 
     property int imageRevision: 0
+    property int sourcePixelW: 0
+    property int sourcePixelH: 0
+    property real currentDpr: (screen && screen.devicePixelRatio > 0) ? screen.devicePixelRatio : 1.0
     property int imageBaseW: Math.max(1, Math.abs(imgRect.width))
     property int imageBaseH: Math.max(1, Math.abs(imgRect.height))
     property real zoomFactor: 1.0
@@ -34,10 +38,15 @@ Window {
     readonly property int toolbarTipHeight: 24
     readonly property int shadowRadius: 12
     readonly property int shadowOffset: 4
+    readonly property int imageTopLeftX: (imgRect.width >= 0 ? imgRect.x : imgRect.x + imgRect.width)
+    readonly property int imageTopLeftY: (imgRect.height >= 0 ? imgRect.y : imgRect.y + imgRect.height)
+    property var targetScreen: null
 
     readonly property int displayW: Math.max(1, Math.round(imageBaseW * zoomFactor))
     readonly property int displayH: Math.max(1, Math.round(imageBaseH * zoomFactor))
-    readonly property int toolbarContentWidth: Math.max(560, stickyRow.implicitWidth + 16)
+    readonly property int extraToolbarWidth: stickyExtraBar.width
+    readonly property int toolbarContentWidth: stickyTool.implicitWidth + extraToolbarWidth + 6
+    readonly property int toolbarBlockX: Math.max(8, Math.min(stickyWin.width - toolbarContentWidth - 8, (stickyWin.displayW - toolbarContentWidth) / 2))
 
     readonly property int stickyShapeType: {
         switch (activeTool) {
@@ -50,10 +59,24 @@ Window {
         }
     }
 
-    width: Math.max(displayW + shadowRadius * 2, toolbarContentWidth + 16)
-    height: displayH + shadowRadius * 2 + shadowOffset + toolbarGap + toolbarHeight + toolbarTipGap + toolbarTipHeight + 4
-    x: (imgRect.width >= 0 ? imgRect.x : imgRect.x + imgRect.width) - shadowRadius
-    y: (imgRect.height >= 0 ? imgRect.y : imgRect.y + imgRect.height) - shadowRadius
+    width: Math.max(displayW, toolbarContentWidth + 16)
+    height: displayH + toolbarGap + toolbarHeight + toolbarTipGap + toolbarTipHeight + 4
+    function findScreenForPoint(px, py) {
+        var screens = Qt.application.screens
+        for (var i = 0; i < screens.length; ++i) {
+            var s = screens[i]
+            if (!s || !s.geometry)
+                continue
+            var g = s.geometry
+            if (px >= g.x && px < g.x + g.width && py >= g.y && py < g.y + g.height)
+                return s
+        }
+        return null
+    }
+
+    function syncInitialPosition() {
+        O_StickyViewModel.positionStickyWindow(stickyWin, imgRect)
+    }
 
     Settings {
         id: menuPrefs
@@ -66,19 +89,19 @@ Window {
     }
 
     function setActiveTool(name) {
-        if (activeTool === name)
-            activeTool = ""
+        if (stickyTool.activeTool === name)
+            stickyTool.activeTool = ""
         else
-            activeTool = name
+            stickyTool.activeTool = name
     }
 
     function showToolbarTip(text, item) {
         toolbarHoverTipText = text
         if (item) {
-            var p = stickyToolbar.mapFromItem(item, item.width / 2, item.height)
+            var p = stickyExtraBar.mapFromItem(item, item.width / 2, item.height)
             toolbarHoverTipCenterX = p.x
         } else {
-            toolbarHoverTipCenterX = stickyToolbar.width / 2
+            toolbarHoverTipCenterX = stickyExtraBar.width / 2
         }
     }
 
@@ -105,13 +128,28 @@ Window {
         zoomFactor = 1.0
     }
 
+    function refreshDisplayMetrics() {
+        currentDpr = (screen && screen.devicePixelRatio > 0) ? screen.devicePixelRatio : 1.0
+        if (sourcePixelW > 0 && sourcePixelH > 0) {
+            imageBaseW = Math.max(1, Math.round(sourcePixelW / currentDpr))
+            imageBaseH = Math.max(1, Math.round(sourcePixelH / currentDpr))
+        } else {
+            imageBaseW = Math.max(1, Math.abs(imgRect.width))
+            imageBaseH = Math.max(1, Math.abs(imgRect.height))
+        }
+    }
+
     function updateImageMetricsFromStore() {
         var img = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)
         if (img && img.width > 0 && img.height > 0) {
-            imageBaseW = img.width
-            imageBaseH = img.height
+            sourcePixelW = img.width
+            sourcePixelH = img.height
+            refreshDisplayMetrics()
             stickyPaintBoard.setBackgroundImg(img)
         } else {
+            sourcePixelW = 0
+            sourcePixelH = 0
+            refreshDisplayMetrics()
             syncPaintboardBackgroundFromDisplay()
         }
     }
@@ -124,10 +162,6 @@ Window {
         stickyImage.grabToImage(function(result) {
             if (!result || !result.image || result.image.width <= 0 || result.image.height <= 0)
                 return
-            if (imageBaseW <= 1 || imageBaseH <= 1) {
-                imageBaseW = result.image.width
-                imageBaseH = result.image.height
-            }
             stickyPaintBoard.setBackgroundImg(result.image)
         }, Qt.size(Math.max(1, imageBaseW), Math.max(1, imageBaseH)))
     }
@@ -165,6 +199,7 @@ Window {
         if (layer && layer.width > 0 && layer.height > 0)
             overwriteWithEdits()
         O_StickyViewModel.copyImageToClipboard(stickyWin.imageUrl)
+        stickyTool.activeTool = ""
         stickyWin.activeTool = ""
         stickyWin.toolbarVisible = false
     }
@@ -182,6 +217,11 @@ Window {
     }
 
     Component.onCompleted: {
+        refreshDisplayMetrics()
+        syncInitialPosition()
+        console.log("[StickyWindow] imgRect:", imgRect.x, imgRect.y, imgRect.width, imgRect.height)
+        console.log("[StickyWindow] imageTopLeft:", imageTopLeftX, imageTopLeftY)
+        console.log("[StickyWindow] windowPos:", x, y, "display:", displayW, displayH)
         updateImageMetricsFromStore()
         stickyWin.raise()
         stickyWin.requestActivate()
@@ -191,6 +231,7 @@ Window {
         sequence: "Esc"
         onActivated: {
             if (stickyWin.activeTool !== "") {
+                stickyTool.activeTool = ""
                 stickyWin.activeTool = ""
                 return
             }
@@ -205,6 +246,9 @@ Window {
     onImageUrlChanged: {
         imageRevision = 0
         resetDisplaySize()
+        sourcePixelW = 0
+        sourcePixelH = 0
+        refreshDisplayMetrics()
         refreshAfterImageChanged()
     }
 
@@ -212,6 +256,13 @@ Window {
         if (activeTool === "mosaic")
             updateImageMetricsFromStore()
     }
+
+    onImgRectChanged: {
+        refreshDisplayMetrics()
+        syncInitialPosition()
+    }
+
+    onScreenChanged: refreshDisplayMetrics()
 
     Component.onDestruction: cleanup()
 
@@ -226,8 +277,8 @@ Window {
         id: imgContainer
         visible: stickyWin.contentActive
         z: 10
-        x: stickyWin.shadowRadius
-        y: stickyWin.shadowRadius + stickyWin.shadowOffset / 2
+        x: 0
+        y: 0
         width: stickyWin.displayW
         height: stickyWin.displayH
         radius: 2
@@ -294,156 +345,68 @@ Window {
         visible: stickyWin.toolbarVisible && stickyWin.activeTool !== ""
         toolName: stickyWin.activeTool
         showColorRow: stickyWin.activeTool !== "mosaic"
-        x: Math.max(8, stickyToolbar.x)
-        y: stickyToolbar.y - height - 6
+        x: Math.max(8, toolbarBlockX)
+        y: stickyTool.y - height - 6
     }
 
-    Rectangle {
-        id: stickyToolbar
+    TZTool {
+        id: stickyTool
         z: 30
         visible: stickyWin.toolbarVisible
-        width: stickyWin.toolbarContentWidth
-        height: stickyWin.toolbarHeight
-        radius: 10
-        color: "#FFFFFF"
-        border.color: "#E2E8F0"
-        border.width: 1
-        x: Math.max(8, Math.min(stickyWin.width - width - 8, stickyWin.shadowRadius + (stickyWin.displayW - width) / 2))
-        y: stickyWin.shadowRadius + stickyWin.shadowOffset / 2 + stickyWin.displayH + stickyWin.toolbarGap
+        width: implicitWidth
+        height: stickyWin.toolbarHeight + 4
+        x: stickyWin.toolbarBlockX
+        y: stickyWin.displayH + stickyWin.toolbarGap
+        showScreenshotButton: false
+        showCancelButton: false
+        showSaveButton: false
+        showStickyButton: false
+        showGifRecordButton: false
+        showLongScreenshotButton: false
+        showHighlightButton: false
+        showTextButton: false
+        showNumberButton: false
 
-        Row {
-            id: stickyRow
-            anchors.centerIn: parent
-            spacing: 6
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: ocrArea.containsMouse ? "#F0FDF4" : "transparent"
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_ocr.svg"; width: 18; height: 18 }
-                MouseArea {
-                    id: ocrArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onEntered: stickyWin.showToolbarTip(qsTr("OCR"), parent)
-                    onExited: stickyWin.hideToolbarTip(qsTr("OCR"))
-                    onPressed: {
-                        var img = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)
-                        O_OcrVM.recognize(img)
-                    }
-                }
-            }
-
-            Rectangle { width: 1; height: 18; color: "#E2E8F0"; anchors.verticalCenter: parent.verticalCenter }
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: (stickyWin.activeTool === "pencil") ? "#EFF6FF" : (pencilArea.containsMouse ? "#F1F5F9" : "transparent")
-                border.color: (stickyWin.activeTool === "pencil") ? "#3B82F6" : "transparent"
-                border.width: 1
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_pencil.svg"; width: 18; height: 18 }
-                MouseArea { id: pencilArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Pencil"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Pencil")); onPressed: stickyWin.setActiveTool("pencil") }
-            }
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: (stickyWin.activeTool === "rect") ? "#EFF6FF" : (rectArea.containsMouse ? "#F1F5F9" : "transparent")
-                border.color: (stickyWin.activeTool === "rect") ? "#3B82F6" : "transparent"
-                border.width: 1
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_square.svg"; width: 18; height: 18 }
-                MouseArea { id: rectArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Rectangle"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Rectangle")); onPressed: stickyWin.setActiveTool("rect") }
-            }
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: (stickyWin.activeTool === "circle") ? "#EFF6FF" : (circleArea.containsMouse ? "#F1F5F9" : "transparent")
-                border.color: (stickyWin.activeTool === "circle") ? "#3B82F6" : "transparent"
-                border.width: 1
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_circle.svg"; width: 18; height: 18 }
-                MouseArea { id: circleArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Circle"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Circle")); onPressed: stickyWin.setActiveTool("circle") }
-            }
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: (stickyWin.activeTool === "arrow") ? "#EFF6FF" : (arrowArea.containsMouse ? "#F1F5F9" : "transparent")
-                border.color: (stickyWin.activeTool === "arrow") ? "#3B82F6" : "transparent"
-                border.width: 1
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_arrow.svg"; width: 18; height: 18 }
-                MouseArea { id: arrowArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Arrow"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Arrow")); onPressed: stickyWin.setActiveTool("arrow") }
-            }
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: (stickyWin.activeTool === "mosaic") ? "#EFF6FF" : (mosaicArea.containsMouse ? "#F1F5F9" : "transparent")
-                border.color: (stickyWin.activeTool === "mosaic") ? "#3B82F6" : "transparent"
-                border.width: 1
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_mosaic.svg"; width: 18; height: 18 }
-                MouseArea {
-                    id: mosaicArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onEntered: stickyWin.showToolbarTip(qsTr("Mosaic"), parent)
-                    onExited: stickyWin.hideToolbarTip(qsTr("Mosaic"))
-                    onPressed: {
-                        var img = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)
-                        if (img && img.width > 0 && img.height > 0)
-                            stickyPaintBoard.setBackgroundImg(img)
-                        stickyWin.setActiveTool("mosaic")
-                        if (stickyWin.activeTool === "mosaic" && !stickyPaintBoard.hasBackgroundImg()) {
-                            Qt.callLater(function() {
-                                var retryImg = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)
-                                if (retryImg && retryImg.width > 0 && retryImg.height > 0)
-                                    stickyPaintBoard.setBackgroundImg(retryImg)
-                                if (!stickyPaintBoard.hasBackgroundImg())
-                                    stickyWin.syncPaintboardBackgroundFromDisplay()
-                            })
-                        }
-                    }
-                }
-            }
-
-            Rectangle { width: 1; height: 18; color: "#E2E8F0"; anchors.verticalCenter: parent.verticalCenter }
-
-            Rectangle { width: 30; height: 30; radius: 7; color: zoomOutArea.containsMouse ? "#F1F5F9" : "transparent"; Text { anchors.centerIn: parent; text: "-"; color: "#334155"; font.pixelSize: 16 } MouseArea { id: zoomOutArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Zoom out"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Zoom out")); onPressed: setZoomValue(stickyWin.zoomFactor - 0.1) } }
-            Rectangle { width: 40; height: 30; radius: 7; color: "transparent"; Text { anchors.centerIn: parent; text: Math.round(stickyWin.zoomFactor * 100) + "%"; color: "#64748B"; font.pixelSize: 11 } }
-            Rectangle { width: 30; height: 30; radius: 7; color: zoomInArea.containsMouse ? "#F1F5F9" : "transparent"; Text { anchors.centerIn: parent; text: "+"; color: "#334155"; font.pixelSize: 16 } MouseArea { id: zoomInArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Zoom in"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Zoom in")); onPressed: setZoomValue(stickyWin.zoomFactor + 0.1) } }
-            Rectangle { width: 30; height: 30; radius: 7; color: rotateArea.containsMouse ? "#F1F5F9" : "transparent"; Text { anchors.centerIn: parent; text: "↻"; color: "#334155"; font.pixelSize: 14 } MouseArea { id: rotateArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Rotate 90°"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Rotate 90°")); onPressed: rotateCurrent(90) } }
-            Rectangle { width: 30; height: 30; radius: 7; color: mirrorArea.containsMouse ? "#F1F5F9" : "transparent"; Text { anchors.centerIn: parent; text: "⇋"; color: "#334155"; font.pixelSize: 14 } MouseArea { id: mirrorArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Mirror"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Mirror")); onPressed: mirrorCurrent() } }
-            Rectangle { width: 30; height: 30; radius: 7; color: resetSizeArea.containsMouse ? "#F1F5F9" : "transparent"; Text { anchors.centerIn: parent; text: "1:1"; color: "#334155"; font.pixelSize: 10 } MouseArea { id: resetSizeArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Reset size"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Reset size")); onPressed: resetDisplaySize() } }
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: overwriteArea.containsMouse ? "#E0F2FE" : "transparent"
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_check.svg"; width: 18; height: 18 }
-                MouseArea { id: overwriteArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Done and copy"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Done and copy")); onPressed: completeEditsAndCopy() }
-            }
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: undoArea.containsMouse ? "#EFF6FF" : "transparent"
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_undo.svg"; width: 18; height: 18 }
-                MouseArea { id: undoArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: stickyWin.showToolbarTip(qsTr("Undo"), parent); onExited: stickyWin.hideToolbarTip(qsTr("Undo")); onPressed: stickyPaintBoard.undo() }
-            }
-
-            Rectangle {
-                width: 30; height: 30; radius: 7
-                color: clearToolArea.containsMouse ? "#FEE2E2" : "transparent"
-                Image { anchors.centerIn: parent; source: "qrc:/resource/img/lc_x.svg"; width: 18; height: 18 }
-                MouseArea {
-                    id: clearToolArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onEntered: stickyWin.showToolbarTip(qsTr("Hide toolbar"), parent)
-                    onExited: stickyWin.hideToolbarTip(qsTr("Hide toolbar"))
-                    onPressed: {
-                        stickyWin.activeTool = ""
-                        stickyWin.toolbarVisible = false
-                    }
-                }
+        onActiveToolChanged: {
+            stickyWin.activeTool = activeTool
+            if (activeTool === "mosaic" && !stickyPaintBoard.hasBackgroundImg()) {
+                Qt.callLater(function() {
+                    var retryImg = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)
+                    if (retryImg && retryImg.width > 0 && retryImg.height > 0)
+                        stickyPaintBoard.setBackgroundImg(retryImg)
+                    if (!stickyPaintBoard.hasBackgroundImg())
+                        stickyWin.syncPaintboardBackgroundFromDisplay()
+                })
             }
         }
+        onSignalOcr: {
+            var img = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)
+            O_OcrVM.recognize(img)
+        }
+        onSignalUndo: stickyPaintBoard.undo()
+    }
+
+    TZStickyExtraToolBar {
+        id: stickyExtraBar
+        z: 30
+        visible: stickyWin.toolbarVisible
+        height: stickyWin.toolbarHeight
+        x: stickyWin.toolbarBlockX + stickyTool.width + 6
+        y: stickyTool.y + 2
+        zoomFactor: stickyWin.zoomFactor
+        onZoomOut: setZoomValue(stickyWin.zoomFactor - 0.1)
+        onZoomIn: setZoomValue(stickyWin.zoomFactor + 0.1)
+        onRotate90: rotateCurrent(90)
+        onMirror: mirrorCurrent()
+        onResetSize: resetDisplaySize()
+        onDoneAndCopy: completeEditsAndCopy()
+        onHideToolbar: {
+            stickyTool.activeTool = ""
+            stickyWin.activeTool = ""
+            stickyWin.toolbarVisible = false
+        }
+        onHoverEntered: function(text, targetItem) { stickyWin.showToolbarTip(text, targetItem) }
+        onHoverExited: function(text) { stickyWin.hideToolbarTip(text) }
     }
 
     Rectangle {
@@ -456,8 +419,8 @@ Window {
         radius: 6
         color: "#0F172A"
         opacity: 0.92
-        x: Math.max(4, Math.min(stickyWin.width - width - 4, stickyToolbar.x + stickyWin.toolbarHoverTipCenterX - width / 2))
-        y: Math.min(stickyWin.height - height - 4, stickyToolbar.y + stickyToolbar.height + stickyWin.toolbarTipGap)
+        x: Math.max(4, Math.min(stickyWin.width - width - 4, stickyExtraBar.x + stickyWin.toolbarHoverTipCenterX - width / 2))
+        y: Math.min(stickyWin.height - height - 4, stickyExtraBar.y + stickyExtraBar.height + stickyWin.toolbarTipGap)
 
         Text {
             id: stickyToolbarTipText
@@ -493,8 +456,8 @@ Window {
     }
 
     function openChatPanel() {
-        var imgLeft = stickyWin.x + stickyWin.shadowRadius
-        var imgTop = stickyWin.y + stickyWin.shadowRadius
+        var imgLeft = stickyWin.x
+        var imgTop = stickyWin.y
         var imgBottom = imgTop + stickyWin.displayH
 
         var screenH = Screen.desktopAvailableHeight
@@ -529,8 +492,10 @@ Window {
             text: stickyWin.toolbarVisible ? qsTr("隐藏工具栏") : qsTr("显示工具栏")
             onTriggered: {
                 stickyWin.toolbarVisible = !stickyWin.toolbarVisible
-                if (!stickyWin.toolbarVisible)
+                if (!stickyWin.toolbarVisible) {
+                    stickyTool.activeTool = ""
                     stickyWin.activeTool = ""
+                }
             }
         }
         Platform.MenuItem { visible: menuPrefs.pinClose; text: qsTr("关闭窗口"); onTriggered: stickyWin.close() }
@@ -553,8 +518,7 @@ Window {
         Platform.MenuItem {
             text: qsTr("重置位置")
             onTriggered: {
-                stickyWin.x = (imgRect.width >= 0 ? imgRect.x : imgRect.x + imgRect.width) - shadowRadius
-                stickyWin.y = (imgRect.height >= 0 ? imgRect.y : imgRect.y + imgRect.height) - shadowRadius
+                syncInitialPosition()
             }
         }
 
@@ -564,8 +528,10 @@ Window {
             text: stickyWin.toolbarVisible ? qsTr("隐藏工具栏") : qsTr("显示工具栏")
             onTriggered: {
                 stickyWin.toolbarVisible = !stickyWin.toolbarVisible
-                if (!stickyWin.toolbarVisible)
+                if (!stickyWin.toolbarVisible) {
+                    stickyTool.activeTool = ""
                     stickyWin.activeTool = ""
+                }
             }
         }
 
@@ -621,10 +587,10 @@ Window {
         z: 0
 
         function inImageArea(mx, my) {
-            return mx >= stickyWin.shadowRadius
-                    && mx <= stickyWin.shadowRadius + stickyWin.displayW
-                    && my >= stickyWin.shadowRadius + stickyWin.shadowOffset / 2
-                    && my <= stickyWin.shadowRadius + stickyWin.shadowOffset / 2 + stickyWin.displayH
+            return mx >= 0
+                    && mx <= stickyWin.displayW
+                    && my >= 0
+                    && my <= stickyWin.displayH
         }
 
         onPressed: function(mouse) {
@@ -637,6 +603,7 @@ Window {
         }
 
         onPositionChanged: function(mouse) {
+            //console.log("mouse.x",mouseX)
             if (pressed && leftDragActive && (mouse.buttons & Qt.LeftButton) && stickyWin.activeTool === "" && !stickyWin.contextMenuOpen) {
                 stickyWin.x += mouseX - dragPos.x
                 stickyWin.y += mouseY - dragPos.y
@@ -669,4 +636,5 @@ Window {
         }
     }
 }
+
 

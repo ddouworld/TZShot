@@ -1,8 +1,9 @@
-import QtQuick
+﻿import QtQuick
 import QtQuick.Window
 import QtQuick.Shapes
 import QtQuick.Layouts
 import com.Tz.tray 1.0
+import "Capture"
 
 TZWindow {
     id: root
@@ -31,6 +32,7 @@ TZWindow {
 
         paintBoard.reset()
         tool.visible = false
+
         tool.activeTool = ""
         tool.markToolInfoVisible = false
 
@@ -59,22 +61,12 @@ TZWindow {
 
         Qt.callLater(function() {
             O_ScreenCapture.captureDesktop()
-
-            var screens = Qt.application.screens
-            if (screens.length === 0)
+            var virtualRect = O_ScreenCapture.virtualGeometry()
+            if (virtualRect.width <= 0 || virtualRect.height <= 0)
                 return
 
-            // Single-screen mode: always use the first screen as capture target.
-            var primary = screens[0]
-
-            var vx = (primary.virtualX !== undefined) ? primary.virtualX : 0
-            var vy = (primary.virtualY !== undefined) ? primary.virtualY : 0
-            root.screenVirtualX = vx
-            root.screenVirtualY = vy
-            root.x = vx
-            root.y = vy
-            root.width = primary.width
-            root.height = primary.height
+            root.screenVirtualX = virtualRect.x
+            root.screenVirtualY = virtualRect.y
 
             O_ScreenCapture.grabToPaintBoard(
                 root.paintBoard,
@@ -100,7 +92,7 @@ TZWindow {
             return
         }
         if (longCaptureBarComponent === null)
-            longCaptureBarComponent = Qt.createComponent("qrc:/qml/TZLongCaptureBar.qml")
+            longCaptureBarComponent = Qt.createComponent("qrc:/qml/LongCapture/TZLongCaptureBar.qml")
         if (longCaptureBarComponent.status === Component.Ready) {
             longCaptureBarObj = longCaptureBarComponent.createObject(null)
             if (longCaptureBarObj) {
@@ -136,7 +128,7 @@ TZWindow {
             return
         }
         if (longCapturePreviewComponent === null)
-            longCapturePreviewComponent = Qt.createComponent("qrc:/qml/TZLongCapturePreview.qml")
+            longCapturePreviewComponent = Qt.createComponent("qrc:/qml/LongCapture/TZLongCapturePreview.qml")
         if (longCapturePreviewComponent.status === Component.Ready) {
             longCapturePreviewObj = longCapturePreviewComponent.createObject(null)
             if (longCapturePreviewObj) {
@@ -152,7 +144,7 @@ TZWindow {
 
     function showLongCaptureFrame(captureRect) {
         if (longCaptureFrameComponent === null)
-            longCaptureFrameComponent = Qt.createComponent("qrc:/qml/TZLongCaptureFrame.qml")
+            longCaptureFrameComponent = Qt.createComponent("qrc:/qml/LongCapture/TZLongCaptureFrame.qml")
         if (longCaptureFrameObj === null && longCaptureFrameComponent.status === Component.Ready) {
             longCaptureFrameObj = longCaptureFrameComponent.createObject(null)
         } else if (longCaptureFrameComponent.status === Component.Error) {
@@ -343,7 +335,18 @@ TZWindow {
         onShowAboutTriggered: { showAboutWin() }
         onExitTriggered: Qt.quit()
     }
-
+    // MouseArea
+    // {
+    //     anchors.fill: parent;
+    //     MouseArea {
+    //         anchors.fill: parent
+    //         onClicked: {
+    //             console.log("x->", mouseX)
+    //             console.log("y-->", mouseY)
+    //         }
+    //         onDoubleClicked: Qt.quit()
+    //     }
+    // }
     Component.onCompleted: {
         trayHelper.setIcon(":/resource/img/tray_icon.svg")
         trayHelper.show()

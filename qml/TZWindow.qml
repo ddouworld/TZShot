@@ -982,6 +982,8 @@ Window {
             // Magnifier follows mouse in local coordinates
             magnifier.magnifierMouseX = mouseX
             magnifier.magnifierMouseY = mouseY
+            magnifier.magnifierAbsX = ax
+            magnifier.magnifierAbsY = ay
             handleMouseMoved(ax, ay, pressed, mouse.modifiers)
         }
 

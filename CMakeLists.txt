@@ -25,6 +25,11 @@ find_package(Qt6 REQUIRED COMPONENTS
 
 qt_standard_project_setup()
 
+# Help Qt Creator's QML code model resolve local qmldir-based modules
+# such as `import TZControls 1.0`.
+set(QML_IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/qml" CACHE STRING "Local QML import paths" FORCE)
+set(QML2_IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/qml" CACHE STRING "Local QML import paths" FORCE)
+
 # ── Third-party build options ─────────────────────────────────
 option(BUILD_THIRDPART_OCR "Auto build OCR libs" ON)
 option(OCR_FETCH_FROM_GITHUB "Fetch Leptonica/Tesseract from GitHub before building" ON)
@@ -146,6 +151,10 @@ endif()
 
 qt_add_executable(TZshot
     ${SOURCES}
+)
+
+set_target_properties(TZshot PROPERTIES
+    QT_QML_IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/qml"
 )
 
 # ── include 路径 ──────────────────────────────────────────
@@ -393,9 +402,15 @@ if(WIN32)
 
         target_include_directories(TZshot PRIVATE "${OCR_INSTALL_DIR}/include")
         target_link_directories(TZshot PRIVATE "${OCR_INSTALL_DIR}/lib")
+        set(OCR_LEPTONICA_LINK_NAME "leptonica-${OCR_LEPTONICA_VERSION}$<$<CONFIG:Debug>:d>")
+        if(MINGW)
+            # Our MinGW Leptonica ExternalProject installs libleptonica.dll.a
+            # without a version/debug suffix, so link against that stable name.
+            set(OCR_LEPTONICA_LINK_NAME "leptonica")
+        endif()
         target_link_libraries(TZshot PRIVATE
             "tesseract55$<$<CONFIG:Debug>:d>"
-            "leptonica-${OCR_LEPTONICA_VERSION}$<$<CONFIG:Debug>:d>"
+            "${OCR_LEPTONICA_LINK_NAME}"
             Ws2_32
         )
 

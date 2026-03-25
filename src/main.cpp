@@ -1,6 +1,8 @@
-#include <QApplication>
+﻿#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickWindow>
+#include <QScreen>
 
 #include "tray_icon_helper.h"
 #include "paint_board/paint_board.h"
@@ -77,7 +79,7 @@ int main(int argc, char *argv[])
 
     // ── 暴露给 QML 的 ViewModel ───────────────────────────
     engine.rootContext()->setContextProperty("O_ScreenCapture",      &screenshotViewModel);
-    engine.rootContext()->setContextProperty("O_StickyViewModel",   &stickyViewModel);
+    engine.rootContext()->setContextProperty("O_StickyViewModel",    &stickyViewModel);
     engine.rootContext()->setContextProperty("O_AIViewModel",        &aiViewModel);
     engine.rootContext()->setContextProperty("O_ImageSaver",         &storageViewModel);
     engine.rootContext()->setContextProperty("O_GlobalShortcut",     &globalShortcut);
@@ -94,5 +96,14 @@ int main(int argc, char *argv[])
             QCoreApplication::exit(-1);
     }, Qt::QueuedConnection);
     engine.load(url);
+
+    if (!engine.rootObjects().isEmpty()) {
+        if (auto *window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst())) {
+            if (QScreen *screen = QGuiApplication::primaryScreen()) {
+                window->setGeometry(screen->virtualGeometry());
+            }
+        }
+    }
+
     return app.exec();
 }
