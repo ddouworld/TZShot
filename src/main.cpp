@@ -28,6 +28,7 @@
 
 int main(int argc, char *argv[])
 {
+    // 强制让窗口跟随系统DPI，不使用虚拟像素
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
         Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 

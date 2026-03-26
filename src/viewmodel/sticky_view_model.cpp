@@ -23,27 +23,15 @@ void StickyViewModel::requestSticky(const QString &imageUrl, const QRect &imgRec
     }
 
     QRect targetRect = imgRect.normalized();
-    QImage image = m_store.getImageByUrl(imageUrl);
-    if (!image.isNull()) {
-        QScreen *screen = QGuiApplication::screenAt(targetRect.topLeft());
-        if (!screen) {
-            screen = QGuiApplication::screenAt(targetRect.center());
-        }
-        if (!screen) {
-            screen = QGuiApplication::primaryScreen();
-        }
-
-        const qreal dpr = screen ? screen->devicePixelRatio() : 1.0;
-        if (dpr > 0.0) {
-            if (!qFuzzyCompare(image.devicePixelRatio(), dpr)) {
-                image.setDevicePixelRatio(dpr);
-                m_store.replaceImage(imageUrl, image);
-            }
-            const QSize logicalSize(qMax(1, qRound(image.width() / dpr)),
-                                    qMax(1, qRound(image.height() / dpr)));
-            targetRect.setSize(logicalSize);
-        }
+    QScreen *screen = QGuiApplication::screenAt(targetRect.topLeft());
+    if (!screen) {
+        screen = QGuiApplication::screenAt(targetRect.center());
     }
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+
+    QImage image = m_store.getImageByUrl(imageUrl);
 
     emit stickyReady(imageUrl, targetRect);
 }
@@ -94,6 +82,11 @@ bool StickyViewModel::copyImageToClipboard(const QString &imageUrl)
 QImage StickyViewModel::getImageByUrl(const QString &imageUrl) const
 {
     return m_store.getImageByUrl(imageUrl);
+}
+
+QSize StickyViewModel::getImageSizeByUrl(const QString &imageUrl) const
+{
+    return m_store.getImageByUrl(imageUrl).size();
 }
 
 QImage StickyViewModel::mergeLayers(const QString &imageUrl, const QImage &annotationLayer) const

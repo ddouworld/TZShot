@@ -28,6 +28,7 @@
         <file>qml/Setting/TZRightPanel.qml</file>
         <file>qml/TZControls/qmldir</file>
         <file>qml/TZControls/TZComboBox.qml</file>
+        <file>qml/TZStickyContextMenu.qml</file>
         <file>qml/Setting/TZHotkeySettings.qml</file>
         <file>qml/Setting/TZAboutWin.qml</file>
         <file>resource/img/lc_check.svg</file>

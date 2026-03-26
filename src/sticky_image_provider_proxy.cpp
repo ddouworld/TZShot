@@ -1,4 +1,4 @@
-#include "sticky_image_provider_proxy.h"
+﻿#include "sticky_image_provider_proxy.h"
 
 StickyImageProviderProxy::StickyImageProviderProxy(StickyImageStore &store)
     : QQuickImageProvider(QQuickImageProvider::Image)
@@ -19,7 +19,13 @@ QImage StickyImageProviderProxy::requestImage(const QString &id, QSize *size, co
     QImage image = m_store.getImage(cleanId);
 
     if (size) {
-        *size = image.size();
+        const qreal dpr = image.devicePixelRatio();
+        if (!image.isNull() && dpr > 0.0) {
+            *size = QSize(qMax(1, qRound(image.width() / dpr)),
+                          qMax(1, qRound(image.height() / dpr)));
+        } else {
+            *size = image.size();
+        }
     }
     return image;
 }

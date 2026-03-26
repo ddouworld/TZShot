@@ -1,4 +1,4 @@
-#include "sticky_image_store.h"
+﻿#include "sticky_image_store.h"
 
 #include <QFile>
 #include <QGuiApplication>

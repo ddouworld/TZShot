@@ -5,6 +5,7 @@ import QtQuick.Effects
 import QtQuick.Controls.Basic
 import QtCore
 import CustomComponents 1.0
+import ".."
 import "../Capture"
 
 Window {
@@ -22,15 +23,14 @@ Window {
     property bool toolbarVisible: true
     property string toolbarHoverTipText: ""
     property real toolbarHoverTipCenterX: 0
-    property bool contextMenuOpen: false
+    property bool contextMenuOpen: stickyContextMenu.contextMenuOpen
 
     property int imageRevision: 0
-    property int sourcePixelW: 0
-    property int sourcePixelH: 0
-    property real currentDpr: (screen && screen.devicePixelRatio > 0) ? screen.devicePixelRatio : 1.0
-    property int imageBaseW: Math.max(1, Math.abs(imgRect.width))
-    property int imageBaseH: Math.max(1, Math.abs(imgRect.height))
     property real zoomFactor: 1.0
+    property real dpiScale: 1.0
+    property size sourceImageSize: Qt.size(1, 1)
+    property int imageLogicalWidth: 1
+    property int imageLogicalHeight: 1
 
     readonly property int toolbarHeight: 40
     readonly property int toolbarGap: 8
@@ -38,15 +38,12 @@ Window {
     readonly property int toolbarTipHeight: 24
     readonly property int shadowRadius: 12
     readonly property int shadowOffset: 4
-    readonly property int imageTopLeftX: (imgRect.width >= 0 ? imgRect.x : imgRect.x + imgRect.width)
-    readonly property int imageTopLeftY: (imgRect.height >= 0 ? imgRect.y : imgRect.y + imgRect.height)
-    property var targetScreen: null
-
-    readonly property int displayW: Math.max(1, Math.round(imageBaseW * zoomFactor))
-    readonly property int displayH: Math.max(1, Math.round(imageBaseH * zoomFactor))
+    readonly property int displayW: Math.max(1, Math.round(imageLogicalWidth * zoomFactor))
+    readonly property int displayH: Math.max(1, Math.round(imageLogicalHeight * zoomFactor))
     readonly property int extraToolbarWidth: stickyExtraBar.width
     readonly property int toolbarContentWidth: stickyTool.implicitWidth + extraToolbarWidth + 6
-    readonly property int toolbarBlockX: Math.max(8, Math.min(stickyWin.width - toolbarContentWidth - 8, (stickyWin.displayW - toolbarContentWidth) / 2))
+    readonly property int toolbarBlockX: Math.max(8, Math.min(stickyWin.width - toolbarContentWidth - 8, imgContainer.x + (imgContainer.width - toolbarContentWidth) / 2))
+    readonly property int toolbarTopY: imgContainer.y + imgContainer.height + stickyWin.toolbarGap
 
     readonly property int stickyShapeType: {
         switch (activeTool) {
@@ -61,21 +58,20 @@ Window {
 
     width: Math.max(displayW, toolbarContentWidth + 16)
     height: displayH + toolbarGap + toolbarHeight + toolbarTipGap + toolbarTipHeight + 4
-    function findScreenForPoint(px, py) {
-        var screens = Qt.application.screens
-        for (var i = 0; i < screens.length; ++i) {
-            var s = screens[i]
-            if (!s || !s.geometry)
-                continue
-            var g = s.geometry
-            if (px >= g.x && px < g.x + g.width && py >= g.y && py < g.y + g.height)
-                return s
-        }
-        return null
-    }
-
     function syncInitialPosition() {
         O_StickyViewModel.positionStickyWindow(stickyWin, imgRect)
+    }
+
+    function updateDpiScale() {
+        dpiScale = (screen && screen.devicePixelRatio > 0) ? screen.devicePixelRatio : 1.0
+    }
+
+    function updateImageLogicalSize() {
+        sourceImageSize = O_StickyViewModel.getImageSizeByUrl(stickyWin.imageUrl)
+        if (sourceImageSize.width > 0 && sourceImageSize.height > 0) {
+            imageLogicalWidth = Math.max(1, Math.round(sourceImageSize.width / dpiScale))
+            imageLogicalHeight = Math.max(1, Math.round(sourceImageSize.height / dpiScale))
+        }
     }
 
     Settings {
@@ -86,13 +82,6 @@ Window {
         property bool pinAi: false
         property bool pinToolbar: false
         property bool pinClose: false
-    }
-
-    function setActiveTool(name) {
-        if (stickyTool.activeTool === name)
-            stickyTool.activeTool = ""
-        else
-            stickyTool.activeTool = name
     }
 
     function showToolbarTip(text, item) {
@@ -128,28 +117,11 @@ Window {
         zoomFactor = 1.0
     }
 
-    function refreshDisplayMetrics() {
-        currentDpr = (screen && screen.devicePixelRatio > 0) ? screen.devicePixelRatio : 1.0
-        if (sourcePixelW > 0 && sourcePixelH > 0) {
-            imageBaseW = Math.max(1, Math.round(sourcePixelW / currentDpr))
-            imageBaseH = Math.max(1, Math.round(sourcePixelH / currentDpr))
-        } else {
-            imageBaseW = Math.max(1, Math.abs(imgRect.width))
-            imageBaseH = Math.max(1, Math.abs(imgRect.height))
-        }
-    }
-
     function updateImageMetricsFromStore() {
         var img = O_StickyViewModel.getImageByUrl(stickyWin.imageUrl)
         if (img && img.width > 0 && img.height > 0) {
-            sourcePixelW = img.width
-            sourcePixelH = img.height
-            refreshDisplayMetrics()
             stickyPaintBoard.setBackgroundImg(img)
         } else {
-            sourcePixelW = 0
-            sourcePixelH = 0
-            refreshDisplayMetrics()
             syncPaintboardBackgroundFromDisplay()
         }
     }
@@ -163,7 +135,7 @@ Window {
             if (!result || !result.image || result.image.width <= 0 || result.image.height <= 0)
                 return
             stickyPaintBoard.setBackgroundImg(result.image)
-        }, Qt.size(Math.max(1, imageBaseW), Math.max(1, imageBaseH)))
+        }, Qt.size(Math.max(1, Math.abs(imgRect.width)), Math.max(1, Math.abs(imgRect.height))))
     }
 
     function refreshAfterImageChanged() {
@@ -217,38 +189,19 @@ Window {
     }
 
     Component.onCompleted: {
-        refreshDisplayMetrics()
+        updateDpiScale()
         syncInitialPosition()
-        console.log("[StickyWindow] imgRect:", imgRect.x, imgRect.y, imgRect.width, imgRect.height)
-        console.log("[StickyWindow] imageTopLeft:", imageTopLeftX, imageTopLeftY)
-        console.log("[StickyWindow] windowPos:", x, y, "display:", displayW, displayH)
         updateImageMetricsFromStore()
+        updateImageLogicalSize()
         stickyWin.raise()
         stickyWin.requestActivate()
     }
-
-    Shortcut {
-        sequence: "Esc"
-        onActivated: {
-            if (stickyWin.activeTool !== "") {
-                stickyTool.activeTool = ""
-                stickyWin.activeTool = ""
-                return
-            }
-            if (stickyWin.toolbarVisible) {
-                stickyWin.toolbarVisible = false
-                return
-            }
-            stickyWin.close()
-        }
-    }
-
     onImageUrlChanged: {
         imageRevision = 0
+        sourceImageSize = Qt.size(1, 1)
+        imageLogicalWidth = 1
+        imageLogicalHeight = 1
         resetDisplaySize()
-        sourcePixelW = 0
-        sourcePixelH = 0
-        refreshDisplayMetrics()
         refreshAfterImageChanged()
     }
 
@@ -257,16 +210,16 @@ Window {
             updateImageMetricsFromStore()
     }
 
-    onImgRectChanged: {
-        refreshDisplayMetrics()
-        syncInitialPosition()
+    onScreenChanged: {
+        updateDpiScale()
+        updateImageLogicalSize()
     }
 
-    onScreenChanged: refreshDisplayMetrics()
+    onImgRectChanged: syncInitialPosition()
 
     Component.onDestruction: cleanup()
 
-    onClosing: function(close) {
+    function onClosing(close) {
         close.accepted = true
         chatPanel.close()
         cleanup()
@@ -288,8 +241,8 @@ Window {
         Item {
             id: visualStage
             anchors.centerIn: parent
-            width: stickyWin.imageBaseW
-            height: stickyWin.imageBaseH
+            width: stickyWin.imageLogicalWidth
+            height: stickyWin.imageLogicalHeight
             scale: stickyWin.zoomFactor
 
             Image {
@@ -300,6 +253,8 @@ Window {
                 opacity: stickyWin.imgOpacity
                 cache: false
                 onStatusChanged: {
+                    if (status === Image.Ready)
+                        stickyWin.updateImageLogicalSize()
                     if (status === Image.Ready && stickyWin.activeTool === "mosaic" && !stickyPaintBoard.hasBackgroundImg())
                         stickyWin.syncPaintboardBackgroundFromDisplay()
                 }
@@ -356,7 +311,7 @@ Window {
         width: implicitWidth
         height: stickyWin.toolbarHeight + 4
         x: stickyWin.toolbarBlockX
-        y: stickyWin.displayH + stickyWin.toolbarGap
+        y: stickyWin.toolbarTopY
         showScreenshotButton: false
         showCancelButton: false
         showSaveButton: false
@@ -476,106 +431,33 @@ Window {
         chatPanel.open(Math.max(0, cx), Math.max(0, cy))
     }
 
-    Platform.Menu {
-        id: contextMenu
-        onAboutToShow: stickyWin.contextMenuOpen = true
-        onAboutToHide: stickyWin.contextMenuOpen = false
-
-        Platform.MenuItem { text: qsTr("当前透明度 %1%").arg(Math.round(stickyWin.imgOpacity * 100)); enabled: false }
-        Platform.MenuSeparator {}
-
-        Platform.MenuItem { visible: menuPrefs.pinSaveMerged; text: qsTr("覆盖贴图(合并标注)"); onTriggered: overwriteWithEdits() }
-        Platform.MenuItem { visible: menuPrefs.pinCopy; text: qsTr("复制贴图"); onTriggered: O_StickyViewModel.copyImageToClipboard(imageUrl) }
-        Platform.MenuItem { visible: menuPrefs.pinAi; text: qsTr("AI 编辑"); onTriggered: openChatPanel() }
-        Platform.MenuItem {
-            visible: menuPrefs.pinToolbar
-            text: stickyWin.toolbarVisible ? qsTr("隐藏工具栏") : qsTr("显示工具栏")
-            onTriggered: {
-                stickyWin.toolbarVisible = !stickyWin.toolbarVisible
-                if (!stickyWin.toolbarVisible) {
-                    stickyTool.activeTool = ""
-                    stickyWin.activeTool = ""
-                }
+    TZStickyContextMenu {
+        id: stickyContextMenu
+        menuPrefs: menuPrefs
+        imageUrl: stickyWin.imageUrl
+        imgOpacity: stickyWin.imgOpacity
+        zoomFactor: stickyWin.zoomFactor
+        toolbarVisible: stickyWin.toolbarVisible
+        saveFolder: O_ImageSaver.savePath
+        overwriteWithEdits: function() { stickyWin.overwriteWithEdits() }
+        copyImageToClipboard: function(url) { O_StickyViewModel.copyImageToClipboard(url) }
+        openChatPanel: function() { stickyWin.openChatPanel() }
+        hideOrToggleToolbar: function() {
+            stickyWin.toolbarVisible = !stickyWin.toolbarVisible
+            if (!stickyWin.toolbarVisible) {
+                stickyTool.activeTool = ""
+                stickyWin.activeTool = ""
             }
         }
-        Platform.MenuItem { visible: menuPrefs.pinClose; text: qsTr("关闭窗口"); onTriggered: stickyWin.close() }
-
-        Platform.MenuSeparator {}
-
-        Platform.MenuItem { text: qsTr("透明度 +5%"); onTriggered: setOpacityValue(stickyWin.imgOpacity + 0.05) }
-        Platform.MenuItem { text: qsTr("透明度 -5%"); onTriggered: setOpacityValue(stickyWin.imgOpacity - 0.05) }
-
-        Platform.MenuSeparator {}
-
-        Platform.MenuItem { text: qsTr("缩小"); onTriggered: setZoomValue(stickyWin.zoomFactor - 0.1) }
-        Platform.MenuItem { text: qsTr("放大"); onTriggered: setZoomValue(stickyWin.zoomFactor + 0.1) }
-        Platform.MenuItem { text: qsTr("旋转 90°"); onTriggered: rotateCurrent(90) }
-        Platform.MenuItem { text: qsTr("镜像"); onTriggered: mirrorCurrent() }
-        Platform.MenuItem { text: qsTr("恢复原始大小"); onTriggered: resetDisplaySize() }
-
-        Platform.MenuSeparator {}
-
-        Platform.MenuItem {
-            text: qsTr("重置位置")
-            onTriggered: {
-                syncInitialPosition()
-            }
-        }
-
-        Platform.MenuSeparator {}
-
-        Platform.MenuItem {
-            text: stickyWin.toolbarVisible ? qsTr("隐藏工具栏") : qsTr("显示工具栏")
-            onTriggered: {
-                stickyWin.toolbarVisible = !stickyWin.toolbarVisible
-                if (!stickyWin.toolbarVisible) {
-                    stickyTool.activeTool = ""
-                    stickyWin.activeTool = ""
-                }
-            }
-        }
-
-        Platform.MenuItem { text: qsTr("AI 编辑"); onTriggered: openChatPanel() }
-
-        Platform.MenuSeparator {}
-
-        Platform.MenuItem { text: qsTr("保存原图"); onTriggered: saveDialog.open() }
-        Platform.MenuItem { text: qsTr("另存为(合并标注)"); onTriggered: mergedSaveDialog.open() }
-        Platform.MenuItem { text: qsTr("覆盖贴图(合并标注)"); onTriggered: overwriteWithEdits() }
-        Platform.MenuItem { text: qsTr("复制贴图"); onTriggered: O_StickyViewModel.copyImageToClipboard(imageUrl) }
-
-        Platform.MenuSeparator {}
-
-        Platform.Menu {
-            title: qsTr("常用项置顶")
-            Platform.MenuItem { text: qsTr("覆盖贴图"); checkable: true; checked: menuPrefs.pinSaveMerged; onTriggered: menuPrefs.pinSaveMerged = !menuPrefs.pinSaveMerged }
-            Platform.MenuItem { text: qsTr("复制贴图"); checkable: true; checked: menuPrefs.pinCopy; onTriggered: menuPrefs.pinCopy = !menuPrefs.pinCopy }
-            Platform.MenuItem { text: qsTr("AI 编辑"); checkable: true; checked: menuPrefs.pinAi; onTriggered: menuPrefs.pinAi = !menuPrefs.pinAi }
-            Platform.MenuItem { text: qsTr("显示/隐藏工具栏"); checkable: true; checked: menuPrefs.pinToolbar; onTriggered: menuPrefs.pinToolbar = !menuPrefs.pinToolbar }
-            Platform.MenuItem { text: qsTr("关闭窗口"); checkable: true; checked: menuPrefs.pinClose; onTriggered: menuPrefs.pinClose = !menuPrefs.pinClose }
-        }
-
-        Platform.MenuSeparator {}
-
-        Platform.MenuItem { text: qsTr("关闭窗口"); onTriggered: stickyWin.close() }
-    }
-
-    Platform.FileDialog {
-        id: saveDialog
-        title: qsTr("选择保存位置")
-        folder: O_ImageSaver.savePath
-        fileMode: Platform.FileDialog.SaveFile
-        nameFilters: ["PNG (*.png)", "JPG (*.jpg)", "BMP (*.bmp)"]
-        onAccepted: O_StickyViewModel.saveImage(imageUrl, saveDialog.file)
-    }
-
-    Platform.FileDialog {
-        id: mergedSaveDialog
-        title: qsTr("另存为(合并标注)")
-        folder: O_ImageSaver.savePath
-        fileMode: Platform.FileDialog.SaveFile
-        nameFilters: ["PNG (*.png)", "JPG (*.jpg)", "BMP (*.bmp)"]
-        onAccepted: saveMergedTo(mergedSaveDialog.file)
+        setOpacityValue: function(value) { stickyWin.setOpacityValue(value) }
+        setZoomValue: function(value) { stickyWin.setZoomValue(value) }
+        rotateCurrent: function(degrees) { stickyWin.rotateCurrent(degrees) }
+        mirrorCurrent: function() { stickyWin.mirrorCurrent() }
+        resetDisplaySize: function() { stickyWin.resetDisplaySize() }
+        resetWindowPosition: function() { stickyWin.syncInitialPosition() }
+        saveOriginalImage: function(url, pathUrl) { O_StickyViewModel.saveImage(url, pathUrl) }
+        saveMergedTo: function(pathUrl) { stickyWin.saveMergedTo(pathUrl) }
+        closeWindow: function() { stickyWin.close() }
     }
 
     MouseArea {
@@ -603,7 +485,6 @@ Window {
         }
 
         onPositionChanged: function(mouse) {
-            //console.log("mouse.x",mouseX)
             if (pressed && leftDragActive && (mouse.buttons & Qt.LeftButton) && stickyWin.activeTool === "" && !stickyWin.contextMenuOpen) {
                 stickyWin.x += mouseX - dragPos.x
                 stickyWin.y += mouseY - dragPos.y
@@ -623,7 +504,7 @@ Window {
         onClicked: function(mouse) {
             if (mouse.button === Qt.RightButton) {
                 leftDragActive = false
-                contextMenu.open()
+                stickyContextMenu.open()
             }
         }
 
@@ -635,6 +516,5 @@ Window {
             wheel.accepted = true
         }
     }
+
 }
-
-

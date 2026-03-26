@@ -1,4 +1,5 @@
-﻿import QtQuick
+﻿
+import QtQuick
 import QtQuick.Window
 import QtQuick.Shapes
 import QtQuick.Layouts
