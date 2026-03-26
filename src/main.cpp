@@ -12,6 +12,9 @@
 #include "sticky_image_provider_proxy.h"
 #include "language_manager.h"
 #include "instance_activation.h"
+#include "widgets/ocr_result_widget.h"
+#include "widgets/settings_dialog.h"
+#include "widgets/widget_window_bridge.h"
 
 // Model
 #include "model/desktop_snapshot.h"
@@ -31,8 +34,7 @@ int main(int argc, char *argv[])
     // 强制让窗口跟随系统DPI，不使用虚拟像素
     // QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
     //     Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor);
-    QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-    QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
+
     QApplication app(argc, argv);
 
     // Single-instance activation: second launch notifies the first one and exits.
@@ -62,10 +64,18 @@ int main(int argc, char *argv[])
     GifRecordViewModel  gifRecordViewModel(appSettings);
     ScrollCaptureViewModel scrollCaptureViewModel(screenshotViewModel, appSettings);
     OcrViewModel        ocrViewModel;
-
+    OcrResultWidget     ocrResultWidget(&ocrViewModel);
 
     // ── 其他服务（不属于 MVVM 任何层）───────────────────
     GlobalShortcut globalShortcut;
+
+    SettingsDialog      settingsDialog(&aiViewModel,
+                                       &storageViewModel,
+                                       &languageManager,
+                                       &gifRecordViewModel,
+                                       &ocrViewModel,
+                                       &globalShortcut);
+    WidgetWindowBridge  widgetWindowBridge(&settingsDialog);
 
     QQmlApplicationEngine engine;
 
@@ -91,6 +101,16 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("O_ScrollCaptureVM",    &scrollCaptureViewModel);
     engine.rootContext()->setContextProperty("O_OcrVM",              &ocrViewModel);
     engine.rootContext()->setContextProperty("O_InstanceBridge",     &instanceActivation);
+    engine.rootContext()->setContextProperty("O_WidgetWindows",      &widgetWindowBridge);
+
+    QObject::connect(&ocrViewModel, &OcrViewModel::isRecognizingChanged, &app, [&]() {
+        if (ocrViewModel.isRecognizing()) {
+            ocrResultWidget.showAndActivate();
+        }
+    });
+    QObject::connect(&ocrViewModel, &OcrViewModel::resultReady, &app, [&](const QString &) {
+        ocrResultWidget.showAndActivate();
+    });
 
     const QUrl url(QStringLiteral("qrc:/qml/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

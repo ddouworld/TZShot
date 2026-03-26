@@ -53,6 +53,8 @@
         <file>resource/img/lc_gif_stop.svg</file>
         <file>resource/img/lc_ocr.svg</file>
         <file>resource/img/lc_longshot.svg</file>
+        <file>resource/img/lc_chevron_down.svg</file>
         <file>resource/qss/sticky_pin_widget.qss</file>
+        <file>resource/qss/settings_dialog.qss</file>
     </qresource>
 </RCC>

@@ -60,6 +60,12 @@ set(SOURCES
     src/widgets/sticky_pin_widget.h
     src/widgets/sticky_canvas_widget.cpp
     src/widgets/sticky_canvas_widget.h
+    src/widgets/ocr_result_widget.cpp
+    src/widgets/ocr_result_widget.h
+    src/widgets/settings_dialog.cpp
+    src/widgets/settings_dialog.h
+    src/widgets/widget_window_bridge.cpp
+    src/widgets/widget_window_bridge.h
 
     # Model
     src/model/desktop_snapshot.cpp

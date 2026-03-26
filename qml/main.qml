@@ -225,26 +225,7 @@ TZWindow {
     }
 
     function showSettingWin() {
-        if (settingWinObj !== null) {
-            settingWinObj.raise()
-            settingWinObj.requestActivate()
-            return
-        }
-        var component = Qt.createComponent("qrc:/qml/Setting/TZSettingWin.qml")
-        if (component.status === Component.Ready)
-            settingWinObj = component.createObject(null)
-        else if (component.status === Component.Error)
-            console.error("Setting window load failed:", component.errorString())
-
-        if (settingWinObj !== null) {
-            settingWinObj.visible = true
-            settingWinObj.raise()
-            settingWinObj.requestActivate()
-            settingWinObj.closing.connect(function() {
-                settingWinObj.destroy(100)
-                settingWinObj = null
-            })
-        }
+        O_WidgetWindows.showSettings()
     }
 
     Connections {
@@ -256,13 +237,6 @@ TZWindow {
 
     Connections {
         target: O_OcrVM
-        function onIsRecognizingChanged() {
-            if (O_OcrVM.isRecognizing)
-                root.createOcrResultWindow()
-        }
-        function onResultReady(text) {
-            root.createOcrResultWindow()
-        }
         function onRecognizeFailed(errorMessage) {
             trayHelper.showMessage(qsTr("OCR 识别失败"), errorMessage)
         }
