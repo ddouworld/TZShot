@@ -57,7 +57,10 @@ void MosaicShape::draw(QPainter* painter)
         const QPoint& blockOrigin = it.key();
         const QColor& color       = it.value();
 
-        QRect blockRect(blockOrigin.x(), blockOrigin.y(), m_blockSize, m_blockSize);
+        QRectF blockRect(blockOrigin.x(),
+                         blockOrigin.y(),
+                         m_blockSize,
+                         m_blockSize);
         
         // 无需裁剪到背景图范围，因为我们不再依赖背景图
         // 但为了保证安全，可以检查坐标是否为正

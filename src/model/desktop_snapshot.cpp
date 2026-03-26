@@ -7,6 +7,8 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QScreen>
+#include <algorithm>
+#include <limits>
 
 #ifdef Q_OS_WIN
 #define WIN32_LEAN_AND_MEAN
@@ -14,6 +16,18 @@
 #endif
 
 namespace {
+
+struct ScreenSortLess
+{
+    template <typename T>
+    bool operator()(const T &lhs, const T &rhs) const
+    {
+        if (lhs.left() != rhs.left()) {
+            return lhs.left() < rhs.left();
+        }
+        return lhs.top() < rhs.top();
+    }
+};
 
 QRect desktopGeometry()
 {
@@ -78,6 +92,33 @@ QImage captureVirtualDesktopImage(const QRect& geometry)
     ReleaseDC(nullptr, screenDC);
     return image;
 }
+
+QVector<QRect> enumerateMonitorRects()
+{
+    struct MonitorRects {
+        QVector<QRect> rects;
+    } monitors;
+
+    EnumDisplayMonitors(nullptr,
+                        nullptr,
+                        [](HMONITOR monitor, HDC, LPRECT, LPARAM data) -> BOOL {
+                            auto *rects = reinterpret_cast<MonitorRects*>(data);
+                            MONITORINFOEXW info{};
+                            info.cbSize = sizeof(info);
+                            if (GetMonitorInfoW(monitor, &info)) {
+                                const RECT &rc = info.rcMonitor;
+                                rects->rects.append(QRect(rc.left,
+                                                          rc.top,
+                                                          rc.right - rc.left,
+                                                          rc.bottom - rc.top));
+                            }
+                            return TRUE;
+                        },
+                        reinterpret_cast<LPARAM>(&monitors));
+
+    std::sort(monitors.rects.begin(), monitors.rects.end(), ScreenSortLess{});
+    return monitors.rects;
+}
 #endif
 
 }
@@ -123,6 +164,7 @@ void DesktopSnapshot::grab()
 #endif
 
     m_virtualGeometry = geometry;
+    buildScreenEntries();
     buildWindowList();
 }
 
@@ -131,6 +173,102 @@ void DesktopSnapshot::release()
     m_snapshot = QPixmap();
     m_virtualGeometry = QRect();
     m_windowRects.clear();
+    m_screenEntries.clear();
+}
+
+void DesktopSnapshot::buildScreenEntries()
+{
+    m_screenEntries.clear();
+
+    QList<QScreen*> screens = QGuiApplication::screens();
+    if (screens.isEmpty()) {
+        return;
+    }
+
+#ifdef Q_OS_WIN
+    const QVector<QRect> monitorRects = enumerateMonitorRects();
+    std::sort(screens.begin(), screens.end(), [](QScreen *lhs, QScreen *rhs) {
+        if (!lhs || !rhs) {
+            return lhs < rhs;
+        }
+        return ScreenSortLess{}(lhs->geometry(), rhs->geometry());
+    });
+
+    const int pairCount = qMin(screens.size(), monitorRects.size());
+    for (int i = 0; i < pairCount; ++i) {
+        QScreen *screen = screens.at(i);
+        if (!screen) {
+            continue;
+        }
+        ScreenEntry entry;
+        entry.logicalGeometry = screen->geometry();
+        entry.physicalRect = monitorRects.at(i);
+        entry.dpr = screen->devicePixelRatio();
+        if (entry.dpr <= 0.0) {
+            entry.dpr = 1.0;
+        }
+        m_screenEntries.append(entry);
+    }
+
+    for (int i = pairCount; i < screens.size(); ++i) {
+        QScreen *screen = screens.at(i);
+        if (!screen) {
+            continue;
+        }
+        ScreenEntry entry;
+        entry.logicalGeometry = screen->geometry();
+        entry.dpr = screen->devicePixelRatio();
+        if (entry.dpr <= 0.0) {
+            entry.dpr = 1.0;
+        }
+        entry.physicalRect = QRect(qRound(entry.logicalGeometry.x() * entry.dpr),
+                                   qRound(entry.logicalGeometry.y() * entry.dpr),
+                                   qRound(entry.logicalGeometry.width() * entry.dpr),
+                                   qRound(entry.logicalGeometry.height() * entry.dpr));
+        m_screenEntries.append(entry);
+    }
+#else
+    for (QScreen *screen : screens) {
+        if (!screen) {
+            continue;
+        }
+        ScreenEntry entry;
+        entry.logicalGeometry = screen->geometry();
+        entry.physicalRect = entry.logicalGeometry;
+        entry.dpr = screen->devicePixelRatio();
+        if (entry.dpr <= 0.0) {
+            entry.dpr = 1.0;
+        }
+        m_screenEntries.append(entry);
+    }
+#endif
+}
+
+const DesktopSnapshot::ScreenEntry *DesktopSnapshot::screenEntryForPoint(const QPoint &logicalPoint) const
+{
+    for (const ScreenEntry &entry : m_screenEntries) {
+        if (entry.logicalGeometry.contains(logicalPoint)) {
+            return &entry;
+        }
+    }
+
+    if (m_screenEntries.isEmpty()) {
+        return nullptr;
+    }
+
+    const ScreenEntry *nearest = &m_screenEntries.first();
+    qreal bestDistance = (std::numeric_limits<qreal>::max)();
+    for (const ScreenEntry &entry : m_screenEntries) {
+        const QPoint center = entry.logicalGeometry.center();
+        const qreal dx = logicalPoint.x() - center.x();
+        const qreal dy = logicalPoint.y() - center.y();
+        const qreal distance = dx * dx + dy * dy;
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            nearest = &entry;
+        }
+    }
+    return nearest;
 }
 
 QPoint DesktopSnapshot::mapLogicalPointToPhysical(const QPoint &logicalPoint) const
@@ -138,7 +276,16 @@ QPoint DesktopSnapshot::mapLogicalPointToPhysical(const QPoint &logicalPoint) co
     if (m_virtualGeometry.isEmpty()) {
         return {};
     }
-    return logicalPoint - m_virtualGeometry.topLeft();
+
+    const ScreenEntry *entry = screenEntryForPoint(logicalPoint);
+    if (!entry) {
+        return {};
+    }
+
+    const QPoint localPoint = logicalPoint - entry->logicalGeometry.topLeft();
+    const QPoint physicalPoint(entry->physicalRect.x() + qRound(localPoint.x() * entry->dpr),
+                               entry->physicalRect.y() + qRound(localPoint.y() * entry->dpr));
+    return physicalPoint - m_virtualGeometry.topLeft();
 }
 
 QRect DesktopSnapshot::mapLogicalRectToPhysical(const QRect &logicalRect) const
@@ -147,7 +294,18 @@ QRect DesktopSnapshot::mapLogicalRectToPhysical(const QRect &logicalRect) const
     if (normalized.isEmpty() || m_virtualGeometry.isEmpty()) {
         return {};
     }
-    QRect translated = normalized.translated(-m_virtualGeometry.topLeft());
+
+    const ScreenEntry *entry = screenEntryForPoint(normalized.center());
+    if (!entry) {
+        return {};
+    }
+
+    const QPoint localTopLeft = normalized.topLeft() - entry->logicalGeometry.topLeft();
+    const QPoint absolutePhysicalTopLeft(entry->physicalRect.x() + qRound(localTopLeft.x() * entry->dpr),
+                                         entry->physicalRect.y() + qRound(localTopLeft.y() * entry->dpr));
+    QRect translated(absolutePhysicalTopLeft - m_virtualGeometry.topLeft(),
+                     QSize(qMax(1, qRound(normalized.width() * entry->dpr)),
+                           qMax(1, qRound(normalized.height() * entry->dpr))));
     return translated.intersected(m_snapshot.rect());
 }
 

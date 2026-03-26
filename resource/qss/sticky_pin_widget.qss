@@ -1,0 +1,81 @@
+#stickyToolbar {
+    background-color: #FFFFFF;
+    border: 1px solid rgba(96, 165, 250, 170);
+    border-radius: 10px;
+}
+
+#stickyToolbar QToolButton {
+    background-color: transparent;
+    color: #0F172A;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    padding: 0px;
+    margin: 0px;
+    qproperty-iconSize: 18px 18px;
+}
+
+#stickyToolbar QToolButton:hover {
+    background-color: #F1F5F9;
+    border-color: transparent;
+}
+
+#stickyToolbar QToolButton:pressed {
+    background-color: #EFF6FF;
+    border-color: #3B82F6;
+}
+
+#stickyToolbar QToolButton:checked {
+    background-color: #EFF6FF;
+    border-color: #3B82F6;
+}
+
+#stickyToolOptions {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+}
+
+#stickyToolOptions QToolButton {
+    background-color: transparent;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    color: #334155;
+}
+
+#stickyToolOptions QToolButton:checked {
+    background-color: #EFF6FF;
+    border-color: #3B82F6;
+    color: #3B82F6;
+}
+
+#stickyToolOptions QToolButton:hover {
+    background-color: #F1F5F9;
+}
+
+#stickyToolOptions QLineEdit,
+#stickyToolOptions QSpinBox {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 4px 6px;
+    color: #0F172A;
+}
+
+#stickyToolOptions QCheckBox {
+    color: #334155;
+}
+
+#stickyInlineTextEditor {
+    background-color: #FFFFFF;
+    border: 1px solid #3B82F6;
+    border-radius: 6px;
+    padding: 4px 6px;
+    color: #0F172A;
+}
+
+#stickyNumberLabel {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    color: #0F172A;
+}

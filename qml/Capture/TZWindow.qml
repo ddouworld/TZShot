@@ -233,7 +233,6 @@ Window {
     )
 
     function createStickyWindow(imageUrl, imgRect) {
-        console.log("imgRect-->",imgRect)
         return windowFactory.createStickyWindow(imageUrl, imgRect)
     }
 
@@ -550,7 +549,6 @@ Window {
                 Qt.callLater(function() {
                     var captureRect = normalizedScreenshotArea
                     var url = O_ScreenCapture.captureRectToStickyUrl(paintBoard, captureRect)
-                    console.log("[Sticky] imageUrl:", url)
                     O_StickyViewModel.requestSticky(url, captureRect)
                     resetArea()
                 })

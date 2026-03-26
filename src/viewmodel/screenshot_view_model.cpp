@@ -10,16 +10,49 @@
 #include <QScreen>
 #include <QWindow>
 
+#ifdef Q_OS_WIN
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellscalingapi.h>
+#endif
+
 namespace {
 
 qreal captureDprForRect(const QRect& rect)
 {
 #ifdef Q_OS_WIN
-    if (QScreen* screen = QGuiApplication::screenAt(rect.center())) {
-        return screen->devicePixelRatio();
+    const POINT centerPoint {
+        rect.center().x(),
+        rect.center().y()
+    };
+    if (HMONITOR monitor = MonitorFromPoint(centerPoint, MONITOR_DEFAULTTONEAREST)) {
+        using GetDpiForMonitorFn = HRESULT (WINAPI *)(HMONITOR, MONITOR_DPI_TYPE, UINT *, UINT *);
+        static const auto getDpiForMonitor = reinterpret_cast<GetDpiForMonitorFn>(
+            GetProcAddress(LoadLibraryW(L"Shcore.dll"), "GetDpiForMonitor"));
+        if (getDpiForMonitor) {
+            UINT dpiX = 0;
+            UINT dpiY = 0;
+            if (SUCCEEDED(getDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY)) && dpiX > 0) {
+                return qreal(dpiX) / 96.0;
+            }
+        }
     }
 #endif
     if (QScreen* screen = QGuiApplication::primaryScreen()) {
+        return screen->devicePixelRatio();
+    }
+    return 1.0;
+}
+
+qreal effectiveCaptureDpr(QQuickItem *paintBoard, const QRect &rect)
+{
+    if (!rect.isEmpty()) {
+        return captureDprForRect(rect);
+    }
+    if (paintBoard && paintBoard->window()) {
+        return paintBoard->window()->devicePixelRatio();
+    }
+    if (QScreen *screen = QGuiApplication::primaryScreen()) {
         return screen->devicePixelRatio();
     }
     return 1.0;
@@ -35,6 +68,11 @@ QRect captureRectInSnapshot(const DesktopSnapshot& snapshot, const QRect& rect, 
         return snapshot.image().rect();
     }
 
+#ifdef Q_OS_WIN
+    Q_UNUSED(dpr);
+    const QRect localRect = rect.translated(-snapshot.virtualGeometry().topLeft());
+    return localRect.intersected(snapshot.image().rect());
+#else
     const QRect localRect = rect.translated(-snapshot.virtualGeometry().topLeft());
     const QPoint topLeft = QPoint(qRound(localRect.left() * dpr),
                                   qRound(localRect.top() * dpr));
@@ -43,6 +81,7 @@ QRect captureRectInSnapshot(const DesktopSnapshot& snapshot, const QRect& rect, 
     QRect target;
     target.setCoords(topLeft.x(), topLeft.y(), bottomRight.x(), bottomRight.y());
     return target.intersected(snapshot.image().rect());
+#endif
 }
 
 }
@@ -140,6 +179,11 @@ QString ScreenshotViewModel::captureRectToStickyUrl(QQuickItem *paintBoard, cons
         return {};
     }
 
+    const qreal dpr = effectiveCaptureDpr(paintBoard, r);
+    if (dpr > 0.0) {
+        img.setDevicePixelRatio(dpr);
+    }
+
     return m_stickyStore.storeImage(img);
 }
 
@@ -199,11 +243,7 @@ QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
     qreal dpr = 1.0;
 
     if (!m_snapshot.isNull()) {
-        if (board && board->window()) {
-            dpr = board->window()->devicePixelRatio();
-        } else if (!rect.isEmpty()) {
-            dpr = captureDprForRect(rect);
-        }
+        dpr = effectiveCaptureDpr(paintBoard, rect);
         const QRect captureRect = captureRectInSnapshot(m_snapshot, rect, dpr);
         screenshot = m_snapshot.image().copy(captureRect).toImage();
     } else {
@@ -249,9 +289,9 @@ QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
 
         if (setBackground) {
             QImage background = screenshot;
-            if (board->window() && board->window()->devicePixelRatio() > 1.0) {
-                const QSize logicalSize(qRound(background.width() / board->window()->devicePixelRatio()),
-                                        qRound(background.height() / board->window()->devicePixelRatio()));
+            if (dpr > 1.0) {
+                const QSize logicalSize(qRound(background.width() / dpr),
+                                        qRound(background.height() / dpr));
                 if (logicalSize.isValid() && logicalSize != background.size()) {
                     background = background.scaled(logicalSize,
                                                    Qt::IgnoreAspectRatio,

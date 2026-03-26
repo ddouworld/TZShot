@@ -29,9 +29,10 @@
 int main(int argc, char *argv[])
 {
     // 强制让窗口跟随系统DPI，不使用虚拟像素
-    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
-        Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
-
+    // QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
+    //     Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor);
+    QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
     QApplication app(argc, argv);
 
     // Single-instance activation: second launch notifies the first one and exits.
@@ -55,6 +56,7 @@ int main(int argc, char *argv[])
     ScreenshotViewModel screenshotViewModel(desktopSnapshot, stickyImageStore);
     StickyViewModel     stickyViewModel(stickyImageStore);
     AIViewModel         aiViewModel(appSettings, stickyImageStore);
+    stickyViewModel.setAiViewModel(&aiViewModel);
     StorageViewModel    storageViewModel(appSettings);
     LanguageManager     languageManager(appSettings);
     GifRecordViewModel  gifRecordViewModel(appSettings);

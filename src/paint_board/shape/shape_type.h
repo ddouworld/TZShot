@@ -10,7 +10,8 @@ enum Shapeype
     MOSAIC,
     TEXT,
     NUMBER,
-    HIGHLIGHT
+    HIGHLIGHT,
+    BLUR
 };
 
 #endif // SHAPETYPE_H

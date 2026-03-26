@@ -1,15 +1,19 @@
-#include "paint_board.h"
+﻿#include "paint_board.h"
 #include "shape/mosaic_shape.h"
 #include <QDebug>
 
 PaintBoard::PaintBoard(QQuickItem *parent)
     : QQuickPaintedItem(parent)
 {
+    setRenderTarget(QQuickPaintedItem::FramebufferObject);
     setAcceptedMouseButtons(Qt::LeftButton);
 }
 
 void PaintBoard::setBackgroundImg(QImage img)
 {
+    // if (!img.isNull()) {
+    //     img.setDevicePixelRatio(1.0);
+    // }
     m_background_img = img;
     update();
 }
@@ -125,7 +129,8 @@ QImage PaintBoard::renderToImage() const
     if (m_shapes.isEmpty())
         return QImage();
 
-    QImage img(qRound(width()), qRound(height()), QImage::Format_ARGB32);
+    QImage img(qRound(width() ), qRound(height()), QImage::Format_ARGB32);
+    img.setDevicePixelRatio(1.0);
     img.fill(Qt::transparent);
 
     QPainter painter(&img);
@@ -140,13 +145,16 @@ QImage PaintBoard::renderToImage() const
 
 void PaintBoard::paint(QPainter *painter)
 {
+    // painter->save();
+    // painter->scale(1.0 / m_canvasScale, 1.0 / m_canvasScale);
     drawBkImg(painter, m_background_img);
     drawShape(painter);
+    // painter->restore();
 }
 
 void PaintBoard::mousePressEvent(QMouseEvent *event)
 {
-    m_startPoint = event->position().toPoint();
+    m_startPoint = (event->position()).toPoint();
     m_drawing = true;
 
     if (m_currentType == TEXT) {
@@ -206,7 +214,7 @@ void PaintBoard::mouseMoveEvent(QMouseEvent *event)
     if (!m_drawing || !m_currentShape)
         return;
 
-    m_currentShape->setEndPoint(event->position().toPoint());
+    m_currentShape->setEndPoint((event->position()).toPoint());
     update();
 }
 
@@ -215,7 +223,7 @@ void PaintBoard::mouseReleaseEvent(QMouseEvent *event)
     if (!m_drawing || !m_currentShape)
         return;
 
-    m_currentShape->setEndPoint(event->position().toPoint());
+    m_currentShape->setEndPoint((event->position()).toPoint());
     m_shapes.append(m_currentShape);
     m_currentShape = nullptr;
     m_drawing = false;
@@ -232,9 +240,7 @@ bool PaintBoard::drawBkImg(QPainter *painter, QImage img)
     if (!painter || img.isNull())
         return false;
 
-    QRectF drawRect = img.rect();
-    drawRect.moveCenter(boundingRect().center());
-    painter->drawImage(drawRect, img);
+    painter->drawImage(QRectF(0, 0, width() , height() ), img);
     return true;
 }
 

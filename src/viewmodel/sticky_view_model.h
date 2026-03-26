@@ -7,6 +7,7 @@
 #include "sticky_image_store.h"
 
 class QScreen;
+class AIViewModel;
 
 // StickyViewModel
 // ---------------
@@ -21,6 +22,7 @@ class StickyViewModel : public QObject
 
 public:
     explicit StickyViewModel(StickyImageStore &store, QObject *parent = nullptr);
+    void setAiViewModel(AIViewModel *aiViewModel);
 
     // 通知 QML 创建贴图窗口，由 ScreenshotViewModel::captureRectToStickyUrl 产生的 URL 触发
     // QML 监听 stickyReady(imageUrl, imgRect) 信号后创建 TZStickyWindow
@@ -33,6 +35,7 @@ public:
     Q_INVOKABLE QImage  getImageByUrl(const QString &imageUrl) const;
     Q_INVOKABLE QSize   getImageSizeByUrl(const QString &imageUrl) const;
     Q_INVOKABLE void    positionStickyWindow(QObject *windowObject, const QRect &imgRect) const;
+    Q_INVOKABLE void    resizeStickyWindow(QObject *windowObject, int physicalWidth, int physicalHeight) const;
     Q_INVOKABLE bool    overwriteWithAnnotations(const QString &imageUrl, const QImage &annotationLayer);
     Q_INVOKABLE bool    saveMergedImage(const QString &imageUrl, const QImage &annotationLayer, const QUrl &targetUrl);
     Q_INVOKABLE bool    rotateImage(const QString &imageUrl, int degreesClockwise);
@@ -46,6 +49,7 @@ private:
     QImage mergeLayers(const QString &imageUrl, const QImage &annotationLayer) const;
 
     StickyImageStore &m_store;
+    AIViewModel *m_aiViewModel = nullptr;
 };
 
 #endif // STICKY_VIEW_MODEL_H

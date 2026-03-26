@@ -31,6 +31,7 @@ private:
         qreal dpr = 1.0;
     };
 
+    void buildScreenEntries();
     void buildWindowList();
     const ScreenEntry* screenEntryForPoint(const QPoint &logicalPoint) const;
 

@@ -12,37 +12,36 @@ void ArrowShape::draw(QPainter *painter)
     if (m_startPoint == m_endPoint) return;
 
     painter->save();
+    const QPointF startPoint(m_startPoint);
+    const QPointF endPoint(m_endPoint);
     QPen pen(m_color, m_size);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     painter->setPen(pen);
     painter->setRenderHint(QPainter::Antialiasing);
 
-    // 绘制箭杆
-    painter->drawLine(m_startPoint, m_endPoint);
+    painter->drawLine(startPoint, endPoint);
 
     // 计算箭头方向角
     const double angle = std::atan2(
-        m_endPoint.y() - m_startPoint.y(),
-        m_endPoint.x() - m_startPoint.x()
+        endPoint.y() - startPoint.y(),
+        endPoint.x() - startPoint.x()
     );
 
-    // 计算箭头两侧的点
-    QPoint arrowP1(
-        m_endPoint.x() - static_cast<int>(std::cos(angle + ARROW_HEAD_ANGLE) * ARROW_HEAD_LENGTH),
-        m_endPoint.y() - static_cast<int>(std::sin(angle + ARROW_HEAD_ANGLE) * ARROW_HEAD_LENGTH)
+    const qreal headLength = ARROW_HEAD_LENGTH;
+    QPointF arrowP1(
+        endPoint.x() - std::cos(angle + ARROW_HEAD_ANGLE) * headLength,
+        endPoint.y() - std::sin(angle + ARROW_HEAD_ANGLE) * headLength
     );
-    QPoint arrowP2(
-        m_endPoint.x() - static_cast<int>(std::cos(angle - ARROW_HEAD_ANGLE) * ARROW_HEAD_LENGTH),
-        m_endPoint.y() - static_cast<int>(std::sin(angle - ARROW_HEAD_ANGLE) * ARROW_HEAD_LENGTH)
+    QPointF arrowP2(
+        endPoint.x() - std::cos(angle - ARROW_HEAD_ANGLE) * headLength,
+        endPoint.y() - std::sin(angle - ARROW_HEAD_ANGLE) * headLength
     );
 
-    // 绘制实心箭头头部
-    QPolygon arrowHead;
-    arrowHead << m_endPoint << arrowP1 << arrowP2;
+    QPolygonF arrowHead;
+    arrowHead << endPoint << arrowP1 << arrowP2;
     painter->setBrush(QBrush(m_color));
     painter->drawPolygon(arrowHead);
 
     painter->restore();
 }
-

@@ -25,9 +25,11 @@ void NumberShape::draw(QPainter* painter)
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setRenderHint(QPainter::TextAntialiasing, true);
-
     const int r = qMax(10, m_size * 2 + 6);
-    const QRect circleRect(m_center.x() - r, m_center.y() - r, r * 2, r * 2);
+    const QRect circleRect(m_center.x() - r,
+                           m_center.y() - r,
+                           r * 2,
+                           r * 2);
 
     painter->setPen(QPen(Qt::white, qMax(2, m_size / 2)));
     painter->setBrush(m_color);

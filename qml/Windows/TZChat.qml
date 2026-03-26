@@ -12,7 +12,9 @@ QtObject {
     signal signalSendPrompt(var text)
 
     // 公开方法
-    function open(px, py) {
+    function open(px, py, targetScreen) {
+        if (targetScreen)
+            win.screen = targetScreen
         win.x = px
         win.y = py
         win.visible = true
@@ -56,14 +58,10 @@ QtObject {
                         id: dragHandle
                         anchors.fill: parent
                         z: -1
-                        property point startPos
 
-                        onPressed: startPos = Qt.point(mouseX, mouseY)
-                        onPositionChanged: {
-                            if (pressed) {
-                                win.x += mouseX - startPos.x
-                                win.y += mouseY - startPos.y
-                            }
+                        onPressed: function(mouse) {
+                            mouse.accepted = true
+                            win.startSystemMove()
                         }
                         cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                     }
@@ -187,6 +185,8 @@ QtObject {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    Layout.minimumHeight: 140
+                    Layout.preferredHeight: 180
                     color: "#F8FAFC"
                     radius: 8
                     border.color: "#E2E8F0"
@@ -259,7 +259,53 @@ QtObject {
                     }
                 }
             }
+
+            Rectangle {
+                id: resizeHandle
+                width: 16
+                height: 16
+                radius: 8
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: 8
+                anchors.bottomMargin: 8
+                color: resizeMouse.pressed ? "#0369A1" : "#0EA5E9"
+                border.color: "white"
+                border.width: 1
+                z: 10
+
+                Canvas {
+                    anchors.fill: parent
+                    anchors.margins: 3
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.reset()
+                        ctx.strokeStyle = "white"
+                        ctx.lineWidth = 1.2
+
+                        ctx.beginPath()
+                        ctx.moveTo(width * 0.25, height)
+                        ctx.lineTo(width, height * 0.25)
+                        ctx.stroke()
+
+                        ctx.beginPath()
+                        ctx.moveTo(width * 0.55, height)
+                        ctx.lineTo(width, height * 0.55)
+                        ctx.stroke()
+                    }
+                }
+
+                MouseArea {
+                    id: resizeMouse
+                    anchors.fill: parent
+                    cursorShape: Qt.SizeFDiagCursor
+
+                    onPressed: function(mouse) {
+                        mouse.accepted = true
+                        win.startSystemResize(Qt.RightEdge | Qt.BottomEdge)
+                    }
+                }
+            }
         }
     }
 }
-

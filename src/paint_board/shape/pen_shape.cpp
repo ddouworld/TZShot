@@ -1,4 +1,4 @@
-#include "pen_shape.h"
+﻿#include "pen_shape.h"
 
 PenShape::PenShape(const QPoint &startPoint, const QColor &color, int size)
     : Shape(color, size)
@@ -25,14 +25,11 @@ void PenShape::draw(QPainter *painter)
         return;
 
     painter->save();
-
     QPen pen(m_color, m_size);
     pen.setCapStyle(Qt::RoundCap);    // 端点圆滑
     pen.setJoinStyle(Qt::RoundJoin);  // 转折点圆滑
     painter->setPen(pen);
     painter->setRenderHint(QPainter::Antialiasing);
-
-    // 将所有点连成折线
     painter->drawPolyline(QPolygon(m_points));
 
     painter->restore();

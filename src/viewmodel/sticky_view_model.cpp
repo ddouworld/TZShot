@@ -1,10 +1,13 @@
-﻿#include "sticky_view_model.h"
-#include <QPainter>
-#include <QTransform>
+#include "sticky_view_model.h"
+
+#include "ai_view_model.h"
+#include "widgets/sticky_pin_widget.h"
+
 #include <QGuiApplication>
+#include <QPainter>
 #include <QScreen>
+#include <QTransform>
 #include <QWindow>
-#include <QDebug>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -16,6 +19,11 @@ StickyViewModel::StickyViewModel(StickyImageStore &store, QObject *parent)
 {
 }
 
+void StickyViewModel::setAiViewModel(AIViewModel *aiViewModel)
+{
+    m_aiViewModel = aiViewModel;
+}
+
 void StickyViewModel::requestSticky(const QString &imageUrl, const QRect &imgRect)
 {
     if (imageUrl.isEmpty()) {
@@ -23,16 +31,14 @@ void StickyViewModel::requestSticky(const QString &imageUrl, const QRect &imgRec
     }
 
     QRect targetRect = imgRect.normalized();
-    QScreen *screen = QGuiApplication::screenAt(targetRect.topLeft());
-    if (!screen) {
-        screen = QGuiApplication::screenAt(targetRect.center());
+#ifdef Q_OS_WIN
+    const QImage image = m_store.getImageByUrl(imageUrl);
+    if (!image.isNull()) {
+        auto *widget = new StickyPinWidget(imageUrl, targetRect, image, &m_store, m_aiViewModel);
+        Q_UNUSED(widget);
+        return;
     }
-    if (!screen) {
-        screen = QGuiApplication::primaryScreen();
-    }
-
-    QImage image = m_store.getImageByUrl(imageUrl);
-
+#endif
     emit stickyReady(imageUrl, targetRect);
 }
 
@@ -51,22 +57,58 @@ void StickyViewModel::positionStickyWindow(QObject *windowObject, const QRect &i
     const QRect targetRect = imgRect.normalized();
     const QPoint topLeft = targetRect.topLeft();
 
+#ifdef Q_OS_WIN
+    if (HWND hwnd = reinterpret_cast<HWND>(window->winId())) {
+        SetWindowPos(hwnd,
+                     HWND_TOPMOST,
+                     topLeft.x(),
+                     topLeft.y(),
+                     0,
+                     0,
+                     SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+        return;
+    }
+#endif
+
+    QScreen *screen = QGuiApplication::screenAt(topLeft);
+    if (!screen) {
+        screen = QGuiApplication::screenAt(targetRect.center());
+    }
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+
+    if (screen && window->screen() != screen) {
+        window->setScreen(screen);
+    }
+
     window->setPosition(topLeft);
+}
+
+void StickyViewModel::resizeStickyWindow(QObject *windowObject, int physicalWidth, int physicalHeight) const
+{
+    auto *window = qobject_cast<QWindow*>(windowObject);
+    if (!window) {
+        return;
+    }
+
+    const int targetWidth = qMax(1, physicalWidth);
+    const int targetHeight = qMax(1, physicalHeight);
 
 #ifdef Q_OS_WIN
     if (HWND hwnd = reinterpret_cast<HWND>(window->winId())) {
-        RECT rect{};
-        GetWindowRect(hwnd, &rect);
-        qDebug() << "[StickyHWND] qt-pos:"
-                 << topLeft
-                 << "hwnd:"
-                 << QRect(rect.left,
-                          rect.top,
-                          rect.right - rect.left,
-                          rect.bottom - rect.top)
-                 << "qmlPos:" << window->x() << window->y();
+        SetWindowPos(hwnd,
+                     nullptr,
+                     0,
+                     0,
+                     targetWidth,
+                     targetHeight,
+                     SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+        return;
     }
 #endif
+
+    window->resize(targetWidth, targetHeight);
 }
 
 bool StickyViewModel::saveImage(const QString &imageUrl, const QUrl &targetUrl)
@@ -86,7 +128,11 @@ QImage StickyViewModel::getImageByUrl(const QString &imageUrl) const
 
 QSize StickyViewModel::getImageSizeByUrl(const QString &imageUrl) const
 {
-    return m_store.getImageByUrl(imageUrl).size();
+    const QImage image = m_store.getImageByUrl(imageUrl);
+    if (image.isNull()) {
+        return {};
+    }
+    return image.size();
 }
 
 QImage StickyViewModel::mergeLayers(const QString &imageUrl, const QImage &annotationLayer) const

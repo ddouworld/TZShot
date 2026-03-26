@@ -12,8 +12,6 @@ void RectShape::draw(QPainter *painter)
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
     painter->setRenderHint(QPainter::Antialiasing);
-    // normalized() 处理从右下往左上拖动的情况
     painter->drawRect(QRect(m_startPoint, m_endPoint).normalized());
     painter->restore();
 }
-

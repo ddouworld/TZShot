@@ -56,6 +56,10 @@ set(SOURCES
     src/instance_activation.cpp
     src/instance_activation.h
     src/singleton.h
+    src/widgets/sticky_pin_widget.cpp
+    src/widgets/sticky_pin_widget.h
+    src/widgets/sticky_canvas_widget.cpp
+    src/widgets/sticky_canvas_widget.h
 
     # Model
     src/model/desktop_snapshot.cpp
@@ -104,6 +108,8 @@ set(SOURCES
     src/paint_board/shape/two_point_shape.h
     src/paint_board/shape/arrow_shape.cpp
     src/paint_board/shape/arrow_shape.h
+    src/paint_board/shape/blur_shape.cpp
+    src/paint_board/shape/blur_shape.h
     src/paint_board/shape/ellipse_shape.cpp
     src/paint_board/shape/ellipse_shape.h
     src/paint_board/shape/mosaic_shape.cpp

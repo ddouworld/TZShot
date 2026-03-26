@@ -82,37 +82,37 @@
 <context>
     <name>TZChat</name>
     <message>
-        <location filename="../qml/TZChat.qml" line="83"/>
+        <location filename="../qml/Windows/TZChat.qml" line="83"/>
         <source>AI 图像编辑</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZChat.qml" line="162"/>
+        <location filename="../qml/Windows/TZChat.qml" line="162"/>
         <source>当前贴图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZChat.qml" line="171"/>
+        <location filename="../qml/Windows/TZChat.qml" line="171"/>
         <source>未关联贴图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZChat.qml" line="178"/>
+        <location filename="../qml/Windows/TZChat.qml" line="178"/>
         <source>发送后将对此图执行 AI 编辑</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZChat.qml" line="203"/>
+        <location filename="../qml/Windows/TZChat.qml" line="203"/>
         <source>描述您想要的修改...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZChat.qml" line="228"/>
+        <location filename="../qml/Windows/TZChat.qml" line="228"/>
         <source>取消</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZChat.qml" line="245"/>
+        <location filename="../qml/Windows/TZChat.qml" line="245"/>
         <source>发送</source>
         <translation type="unfinished"></translation>
     </message>
@@ -178,7 +178,7 @@
 <context>
     <name>TZGifRecordBar</name>
     <message>
-        <location filename="../qml/TZGifRecordBar.qml" line="186"/>
+        <location filename="../qml/Capture/TZGifRecordBar.qml" line="186"/>
         <source>正在生成 GIF...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -254,52 +254,52 @@
 <context>
     <name>TZMarkToolInfo</name>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="13"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="13"/>
         <source>文本</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="62"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="62"/>
         <source>细</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="63"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="63"/>
         <source>中</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="64"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="64"/>
         <source>粗</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="65"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="65"/>
         <source>特粗</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="133"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="133"/>
         <source>输入文字</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="140"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="140"/>
         <source>背景</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="152"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="152"/>
         <source>模糊</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="177"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="177"/>
         <source>自动递增</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZMarkToolInfo.qml" line="187"/>
+        <location filename="../qml/Capture/TZMarkToolInfo.qml" line="187"/>
         <source>数字</source>
         <translation type="unfinished"></translation>
     </message>
@@ -307,32 +307,32 @@
 <context>
     <name>TZOcrResult</name>
     <message>
-        <location filename="../qml/TZOcrResult.qml" line="67"/>
+        <location filename="../qml/Windows/TZOcrResult.qml" line="67"/>
         <source>OCR 识别结果</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZOcrResult.qml" line="167"/>
+        <location filename="../qml/Windows/TZOcrResult.qml" line="167"/>
         <source>正在识别中…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZOcrResult.qml" line="190"/>
+        <location filename="../qml/Windows/TZOcrResult.qml" line="190"/>
         <source>识别结果将显示在这里…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZOcrResult.qml" line="239"/>
+        <location filename="../qml/Windows/TZOcrResult.qml" line="239"/>
         <source>复制全部</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZOcrResult.qml" line="265"/>
+        <location filename="../qml/Windows/TZOcrResult.qml" line="265"/>
         <source>关闭</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZOcrResult.qml" line="293"/>
+        <location filename="../qml/Windows/TZOcrResult.qml" line="293"/>
         <source>已复制！</source>
         <translation type="unfinished"></translation>
     </message>
@@ -366,170 +366,170 @@
 <context>
     <name>TZStickyWindow</name>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="324"/>
-        <location filename="../qml/TZStickyWindow.qml" line="325"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="324"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="325"/>
         <source>OCR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="341"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="341"/>
         <source>Pencil</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="350"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="350"/>
         <source>Rectangle</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="359"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="359"/>
         <source>Circle</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="368"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="368"/>
         <source>Arrow</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="382"/>
-        <location filename="../qml/TZStickyWindow.qml" line="383"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="382"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="383"/>
         <source>Mosaic</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="404"/>
-        <location filename="../qml/TZStickyWindow.qml" line="539"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="404"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="539"/>
         <source>缩小</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="406"/>
-        <location filename="../qml/TZStickyWindow.qml" line="540"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="406"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="540"/>
         <source>放大</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="407"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="407"/>
         <source>旋转90°</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="408"/>
-        <location filename="../qml/TZStickyWindow.qml" line="542"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="408"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="542"/>
         <source>镜像</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="409"/>
-        <location filename="../qml/TZStickyWindow.qml" line="543"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="409"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="543"/>
         <source>恢复原始大小</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="415"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="415"/>
         <source>完成并复制</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="422"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="422"/>
         <source>撤销</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="434"/>
-        <location filename="../qml/TZStickyWindow.qml" line="435"/>
-        <location filename="../qml/TZStickyWindow.qml" line="523"/>
-        <location filename="../qml/TZStickyWindow.qml" line="558"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="434"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="435"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="523"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="558"/>
         <source>隐藏工具栏</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="515"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="515"/>
         <source>当前透明度 %1%</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="518"/>
-        <location filename="../qml/TZStickyWindow.qml" line="572"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="518"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="572"/>
         <source>覆盖贴图(合并标注)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="519"/>
-        <location filename="../qml/TZStickyWindow.qml" line="573"/>
-        <location filename="../qml/TZStickyWindow.qml" line="580"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="519"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="573"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="580"/>
         <source>复制贴图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="520"/>
-        <location filename="../qml/TZStickyWindow.qml" line="566"/>
-        <location filename="../qml/TZStickyWindow.qml" line="581"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="520"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="566"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="581"/>
         <source>AI 编辑</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="523"/>
-        <location filename="../qml/TZStickyWindow.qml" line="558"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="523"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="558"/>
         <source>显示工具栏</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="530"/>
-        <location filename="../qml/TZStickyWindow.qml" line="583"/>
-        <location filename="../qml/TZStickyWindow.qml" line="588"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="530"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="583"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="588"/>
         <source>关闭窗口</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="534"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="534"/>
         <source>透明度 +5%</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="535"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="535"/>
         <source>透明度 -5%</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="541"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="541"/>
         <source>旋转 90°</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="548"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="548"/>
         <source>重置位置</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="570"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="570"/>
         <source>保存原图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="571"/>
-        <location filename="../qml/TZStickyWindow.qml" line="602"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="571"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="602"/>
         <source>另存为(合并标注)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="578"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="578"/>
         <source>常用项置顶</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="579"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="579"/>
         <source>覆盖贴图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="582"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="582"/>
         <source>显示/隐藏工具栏</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZStickyWindow.qml" line="593"/>
+        <location filename="../qml/Windows/TZStickyWindow.qml" line="593"/>
         <source>选择保存位置</source>
         <translation type="unfinished"></translation>
     </message>
@@ -537,77 +537,77 @@
 <context>
     <name>TZTool</name>
     <message>
-        <location filename="../qml/TZTool.qml" line="83"/>
+        <location filename="../qml/Capture/TZTool.qml" line="83"/>
         <source>取消</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="76"/>
+        <location filename="../qml/Capture/TZTool.qml" line="76"/>
         <source>完成</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="92"/>
+        <location filename="../qml/Capture/TZTool.qml" line="92"/>
         <source>OCR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="100"/>
+        <location filename="../qml/Capture/TZTool.qml" line="100"/>
         <source>录制GIF</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="109"/>
+        <location filename="../qml/Capture/TZTool.qml" line="109"/>
         <source>保存</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="116"/>
+        <location filename="../qml/Capture/TZTool.qml" line="116"/>
         <source>贴图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="127"/>
+        <location filename="../qml/Capture/TZTool.qml" line="127"/>
         <source>矩形</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="136"/>
+        <location filename="../qml/Capture/TZTool.qml" line="136"/>
         <source>圆形</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="145"/>
+        <location filename="../qml/Capture/TZTool.qml" line="145"/>
         <source>箭头</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="154"/>
+        <location filename="../qml/Capture/TZTool.qml" line="154"/>
         <source>画笔</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="163"/>
+        <location filename="../qml/Capture/TZTool.qml" line="163"/>
         <source>高亮</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="172"/>
+        <location filename="../qml/Capture/TZTool.qml" line="172"/>
         <source>马赛克</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="181"/>
+        <location filename="../qml/Capture/TZTool.qml" line="181"/>
         <source>文字</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="190"/>
+        <location filename="../qml/Capture/TZTool.qml" line="190"/>
         <source>序号</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZTool.qml" line="197"/>
+        <location filename="../qml/Capture/TZTool.qml" line="197"/>
         <source>撤销</source>
         <translation type="unfinished"></translation>
     </message>
@@ -615,62 +615,62 @@
 <context>
     <name>TZWindow</name>
     <message>
-        <location filename="../qml/TZWindow.qml" line="134"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="134"/>
         <source>Capture done</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="134"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="134"/>
         <source>Copied to clipboard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="136"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="136"/>
         <source>Capture failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="136"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="136"/>
         <source>Failed to copy image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="434"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="434"/>
         <source>Select save location</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="442"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="442"/>
         <source>Save success</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="442"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="442"/>
         <source>Screenshot saved to file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="445"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="445"/>
         <source>Save failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="445"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="445"/>
         <source>Failed to save screenshot file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="563"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="563"/>
         <source>%1 * %2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="705"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="705"/>
         <source>Cancel</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/TZWindow.qml" line="727"/>
+        <location filename="../qml/Capture/TZWindow.qml" line="727"/>
         <source>OK</source>
         <translation type="unfinished"></translation>
     </message>

@@ -27,7 +27,6 @@ void TextShape::draw(QPainter* painter)
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setRenderHint(QPainter::TextAntialiasing, true);
-
     QFont f = painter->font();
     f.setPixelSize(qMax(12, m_size * 4));
     painter->setFont(f);
