@@ -19,6 +19,7 @@ public:
     ~StickyCanvasWidget() override;
 
     void setBackgroundImage(const QImage &image);
+    void setBackgroundVisible(bool visible);
     void setViewScale(qreal scale);
     void setActiveShapeType(Shapeype type);
     void setPenColor(const QColor &color);
@@ -30,6 +31,8 @@ public:
     void setNumberAutoIncrement(bool enabled);
     bool drawingEnabled() const { return m_drawingEnabled; }
     Shapeype activeShapeType() const { return m_shapeType; }
+    bool hasAnnotations() const { return !m_shapes.isEmpty(); }
+    QImage compositedImage() const;
     void addTextAnnotation(const QPoint &point, const QString &text);
     void undo();
     void reset();
@@ -52,6 +55,7 @@ private:
     QList<Shape*> m_shapes;
     Shape *m_currentShape = nullptr;
     QImage m_backgroundImage;
+    bool m_backgroundVisible = true;
     QColor m_penColor = Qt::red;
     int m_penSize = 6;
     Shapeype m_shapeType = PEN;

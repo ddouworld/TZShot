@@ -32,6 +32,15 @@ void StickyCanvasWidget::setBackgroundImage(const QImage &image)
     update();
 }
 
+void StickyCanvasWidget::setBackgroundVisible(bool visible)
+{
+    if (m_backgroundVisible == visible) {
+        return;
+    }
+    m_backgroundVisible = visible;
+    update();
+}
+
 void StickyCanvasWidget::setViewScale(qreal scale)
 {
     const qreal next = qMax<qreal>(0.01, scale);
@@ -110,6 +119,39 @@ void StickyCanvasWidget::addTextAnnotation(const QPoint &point, const QString &t
     update();
 }
 
+QImage StickyCanvasWidget::compositedImage() const
+{
+    if (size().isEmpty()) {
+        return {};
+    }
+
+    QImage image(size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    if (!m_backgroundImage.isNull()) {
+        painter.drawImage(QRect(QPoint(0, 0), size()), m_backgroundImage);
+    } else {
+        painter.fillRect(image.rect(), Qt::white);
+    }
+
+    painter.save();
+    painter.scale(m_viewScale, m_viewScale);
+    for (Shape *shape : m_shapes) {
+        if (shape) {
+            shape->draw(&painter);
+        }
+    }
+    if (m_currentShape) {
+        m_currentShape->draw(&painter);
+    }
+    painter.restore();
+
+    return image;
+}
+
 void StickyCanvasWidget::undo()
 {
     if (!m_shapes.isEmpty()) {
@@ -131,9 +173,11 @@ void StickyCanvasWidget::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.fillRect(rect(), Qt::white);
+    if (m_backgroundVisible) {
+        painter.fillRect(rect(), Qt::white);
+    }
 
-    if (!m_backgroundImage.isNull()) {
+    if (m_backgroundVisible && !m_backgroundImage.isNull()) {
         painter.drawImage(rect(), m_backgroundImage);
     }
 

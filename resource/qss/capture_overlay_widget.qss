@@ -1,0 +1,186 @@
+#captureOverlayToolbar {
+    background: #FFFFFF;
+    border: 1px solid rgba(96, 165, 250, 170);
+    border-radius: 10px;
+}
+
+#captureOverlayGifBar {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+}
+
+#captureOverlayTipBubble {
+    background: rgba(15, 23, 42, 235);
+    border: none;
+    border-radius: 6px;
+}
+
+#captureOverlayTipLabel {
+    color: #FFFFFF;
+    font-size: 11px;
+}
+
+#captureOverlayGifProgress {
+    background: #E2E8F0;
+    border: none;
+    border-radius: 3px;
+}
+
+#captureOverlayGifProgress::chunk {
+    background: #3B82F6;
+    border-radius: 3px;
+}
+
+QToolTip {
+    background: #0F172A;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+#captureOverlayToolbar QToolButton {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    padding: 0px;
+    margin: 0px;
+    color: #0F172A;
+    min-width: 32px;
+    max-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+}
+
+#captureOverlayGifBar QToolButton {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    padding: 0px;
+    margin: 0px;
+    color: #0F172A;
+    min-width: 32px;
+    max-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+}
+
+#captureOverlayGifBar QToolButton:hover {
+    background: #F8FAFC;
+}
+
+#captureOverlayGifBar QToolButton:pressed {
+    background: #EFF6FF;
+    border-color: #3B82F6;
+}
+
+#captureOverlayToolbar QToolButton:hover {
+    background: #F1F5F9;
+}
+
+#captureOverlayToolbar QToolButton:pressed {
+    background: #EFF6FF;
+    border-color: #3B82F6;
+}
+
+#captureOverlayToolbar QToolButton:checked {
+    background: #EFF6FF;
+    border-color: #3B82F6;
+}
+
+#captureOverlayGifStopButton:hover {
+    background: #FEF3C7;
+}
+
+#captureOverlayGifCancelButton:hover {
+    background: #FEE2E2;
+}
+
+#captureOverlayToolbar QToolTip {
+    background: #0F172A;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+#captureOverlayToolbarDivider {
+    background: #E2E8F0;
+    min-width: 1px;
+    max-width: 1px;
+}
+
+#captureOverlayGifStatus {
+    color: #1E293B;
+    font-size: 13px;
+    font-family: "Consolas";
+    font-weight: 600;
+}
+
+#captureOverlayGifFrames {
+    color: #94A3B8;
+    font-size: 11px;
+}
+
+#captureOverlayGifDot {
+    background: #EF4444;
+    border-radius: 4px;
+}
+
+#captureOverlayToolOptions {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+}
+
+#captureOverlayToolOptions QToolButton {
+    background-color: transparent;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    color: #334155;
+}
+
+#captureOverlayToolOptions QToolButton:checked {
+    background-color: #EFF6FF;
+    border-color: #3B82F6;
+    color: #3B82F6;
+}
+
+#captureOverlayToolOptions QToolButton:hover {
+    background-color: #F1F5F9;
+}
+
+#captureOverlayToolOptions QLineEdit,
+#captureOverlayToolOptions QSpinBox {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 4px 6px;
+    color: #0F172A;
+}
+
+#captureOverlayToolOptions QCheckBox {
+    color: #334155;
+}
+
+#captureOverlayInlineTextEditor {
+    background-color: #FFFFFF;
+    border: 1px solid #3B82F6;
+    border-radius: 6px;
+    padding: 4px 6px;
+    color: #0F172A;
+}
+
+#captureOverlayInlineTextPanel {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 10px;
+}
+
+#captureOverlayNumberLabel {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    color: #0F172A;
+}

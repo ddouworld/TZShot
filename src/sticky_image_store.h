@@ -11,8 +11,7 @@
 // StickyImageStore
 // ----------------
 // 纯业务类（QObject），负责贴图的存储、释放、保存、复制到剪贴板等操作。
-// 不继承 QQuickImageProvider，生命周期完全由调用方控制，不受 engine 影响。
-// 图片数据通过 storeImage() 写入，由 StickyImageProviderProxy 的 requestImage() 读取。
+// 生命周期完全由调用方控制，不依赖 Qt Quick 运行时。
 
 class StickyImageStore : public QObject
 {
@@ -21,11 +20,11 @@ class StickyImageStore : public QObject
 public:
     explicit StickyImageStore(QObject *parent = nullptr);
 
-    // 存储图片，返回可供 QML Image.source 使用的 URL 字符串
+    // 存储图片，返回统一的贴图 URL 字符串
     // 格式："image://sticky/<uuid>"
     QString storeImage(const QImage &image);
 
-    // 供 StickyImageProviderProxy 调用，线程安全
+    // 线程安全读取
     QImage getImage(const QString &id) const;
     QImage getImageByUrl(const QString &imageUrl) const;
 

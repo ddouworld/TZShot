@@ -1,0 +1,76 @@
+#longCaptureBar {
+    background: #111827;
+    border: 1px solid #1F2937;
+    border-radius: 12px;
+}
+
+#longCaptureBar QLabel {
+    color: #E5E7EB;
+}
+
+#longCaptureBadge {
+    background: #F97316;
+    color: white;
+    border-radius: 13px;
+    font-weight: 700;
+}
+
+#longCaptureFrameLabel {
+    color: #D1D5DB;
+}
+
+#longCapturePrimaryBtn {
+    background: #2563EB;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0 12px;
+}
+
+#longCapturePrimaryBtn:hover {
+    background: #1D4ED8;
+}
+
+#longCaptureDangerBtn {
+    background: #EF4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0 12px;
+}
+
+#longCaptureDangerBtn:hover {
+    background: #DC2626;
+}
+
+#longCapturePreview {
+    background: #111827;
+    border: 1px solid #1F2937;
+    border-radius: 12px;
+}
+
+#longCapturePreview QLabel {
+    color: #F9FAFB;
+}
+
+#longCapturePreviewTitle {
+    font-weight: 700;
+}
+
+#longCapturePreviewSub {
+    color: #9CA3AF;
+}
+
+#longCapturePreviewStatus {
+    color: #CBD5E1;
+}
+
+#longCapturePreviewImageBox {
+    background: #0B1220;
+    border: 1px solid #334155;
+    border-radius: 8px;
+}
+
+#longCapturePreviewEmpty {
+    color: #64748B;
+}

@@ -29,7 +29,6 @@ public:
     void draw(QPainter* painter) override;
 
     // 设置当前画布的快照，用于马赛克取色
-    // 每次绘制前由 PaintBoard 调用
     void setCanvasSnapshot(const QImage& snapshot);
 
 private:

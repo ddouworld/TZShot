@@ -1,13 +1,12 @@
-﻿#include "screenshot_view_model.h"
-#include "paint_board/paint_board.h"
+#include "screenshot_view_model.h"
+#include "widgets/sticky_canvas_widget.h"
 
 #include <QBuffer>
 #include <QClipboard>
 #include <QDebug>
 #include <QGuiApplication>
-#include <QPainter>
-#include <QQuickWindow>
 #include <QScreen>
+#include <QWidget>
 #include <QWindow>
 
 #ifdef Q_OS_WIN
@@ -38,19 +37,23 @@ qreal captureDprForRect(const QRect& rect)
         }
     }
 #endif
-    if (QScreen* screen = QGuiApplication::primaryScreen()) {
+    if (QScreen *screen = QGuiApplication::primaryScreen()) {
         return screen->devicePixelRatio();
     }
     return 1.0;
 }
 
-qreal effectiveCaptureDpr(QQuickItem *paintBoard, const QRect &rect)
+qreal effectiveCaptureDpr(StickyCanvasWidget *paintBoard, const QRect &rect)
 {
     if (!rect.isEmpty()) {
         return captureDprForRect(rect);
     }
-    if (paintBoard && paintBoard->window()) {
-        return paintBoard->window()->devicePixelRatio();
+    if (paintBoard) {
+        if (QWidget *topLevel = paintBoard->window()) {
+            if (QWindow *handle = topLevel->windowHandle()) {
+                return handle->devicePixelRatio();
+            }
+        }
     }
     if (QScreen *screen = QGuiApplication::primaryScreen()) {
         return screen->devicePixelRatio();
@@ -124,7 +127,7 @@ QRect ScreenshotViewModel::windowAtPoint(int x, int y) const
     return m_snapshot.windowAtPoint(x, y);
 }
 
-bool ScreenshotViewModel::captureRectToClipboard(QQuickItem *paintBoard, const QRect &rect)
+bool ScreenshotViewModel::captureRectToClipboard(StickyCanvasWidget *paintBoard, const QRect &rect)
 {
     const QRect r = rect.normalized();
     if (r.isEmpty()) {
@@ -141,7 +144,7 @@ bool ScreenshotViewModel::captureRectToClipboard(QQuickItem *paintBoard, const Q
     return writeImageToClipboard(img);
 }
 
-QString ScreenshotViewModel::captureRectToBase64(QQuickItem *paintBoard, const QRect &rect)
+QString ScreenshotViewModel::captureRectToBase64(StickyCanvasWidget *paintBoard, const QRect &rect)
 {
     const QRect r = rect.normalized();
     if (r.isEmpty()) {
@@ -165,7 +168,7 @@ QString ScreenshotViewModel::captureRectToBase64(QQuickItem *paintBoard, const Q
     return data.toBase64();
 }
 
-QString ScreenshotViewModel::captureRectToStickyUrl(QQuickItem *paintBoard, const QRect &rect)
+QString ScreenshotViewModel::captureRectToStickyUrl(StickyCanvasWidget *paintBoard, const QRect &rect)
 {
     const QRect r = rect.normalized();
     if (r.isEmpty()) {
@@ -185,15 +188,6 @@ QString ScreenshotViewModel::captureRectToStickyUrl(QQuickItem *paintBoard, cons
     }
 
     return m_stickyStore.storeImage(img);
-}
-
-void ScreenshotViewModel::grabToPaintBoard(QQuickItem *paintBoard, const QRect &rect)
-{
-    const QRect r = rect.normalized();
-    if (r.isEmpty()) {
-        return;
-    }
-    captureScreen(paintBoard, r, true);
 }
 
 QImage ScreenshotViewModel::captureRectToImage(const QRect &rect)
@@ -233,17 +227,14 @@ bool ScreenshotViewModel::copyImageToClipboard(const QImage &image)
     return writeImageToClipboard(image);
 }
 
-QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
+QImage ScreenshotViewModel::captureScreen(StickyCanvasWidget *paintBoard,
                                           const QRect &rect,
                                           bool setBackground)
 {
-    PaintBoard *board = qobject_cast<PaintBoard*>(paintBoard);
-
     QImage screenshot;
-    qreal dpr = 1.0;
 
     if (!m_snapshot.isNull()) {
-        dpr = effectiveCaptureDpr(paintBoard, rect);
+        const qreal dpr = effectiveCaptureDpr(paintBoard, rect);
         const QRect captureRect = captureRectInSnapshot(m_snapshot, rect, dpr);
         screenshot = m_snapshot.image().copy(captureRect).toImage();
     } else {
@@ -255,50 +246,22 @@ QImage ScreenshotViewModel::captureScreen(QQuickItem *paintBoard,
         screenshot = screen->grabWindow(0).toImage();
     }
 
-    if (board) {
-        QImage annotations = board->renderToImage();
-        if (!annotations.isNull()) {
-            QPainter p(&screenshot);
-
+    if (paintBoard) {
+        const QImage composited = paintBoard->compositedImage();
+        if (!composited.isNull()) {
             if (!rect.isEmpty()) {
-                QQuickWindow *win = board->window();
-                const int windowAbsX = win ? win->x() : 0;
-                const int windowAbsY = win ? win->y() : 0;
-                const int boardAbsX = windowAbsX + qRound(board->x());
-                const int boardAbsY = windowAbsY + qRound(board->y());
-
-                const int sourceX = rect.x() - boardAbsX;
-                const int sourceY = rect.y() - boardAbsY;
-                QRect srcRect(sourceX, sourceY, rect.width(), rect.height());
-                srcRect = srcRect.intersected(annotations.rect());
-
-                if (!srcRect.isEmpty()) {
-                    const int dstX = qRound((srcRect.x() - sourceX) * dpr);
-                    const int dstY = qRound((srcRect.y() - sourceY) * dpr);
-                    const int dstW = qMax(1, qRound(srcRect.width() * dpr));
-                    const int dstH = qMax(1, qRound(srcRect.height() * dpr));
-                    p.drawImage(QRect(dstX, dstY, dstW, dstH),
-                                annotations,
-                                srcRect);
+                const QRect localRect = rect.translated(-m_snapshot.virtualGeometry().topLeft())
+                                             .intersected(composited.rect());
+                if (!localRect.isEmpty()) {
+                    screenshot = composited.copy(localRect);
                 }
             } else {
-                p.drawImage(0, 0, annotations);
+                screenshot = composited;
             }
-            p.end();
         }
 
         if (setBackground) {
-            QImage background = screenshot;
-            if (dpr > 1.0) {
-                const QSize logicalSize(qRound(background.width() / dpr),
-                                        qRound(background.height() / dpr));
-                if (logicalSize.isValid() && logicalSize != background.size()) {
-                    background = background.scaled(logicalSize,
-                                                   Qt::IgnoreAspectRatio,
-                                                   Qt::SmoothTransformation);
-                }
-            }
-            board->setBackgroundImg(background);
+            paintBoard->setBackgroundImage(screenshot);
         }
     }
 

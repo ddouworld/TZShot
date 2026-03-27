@@ -15,20 +15,12 @@ find_package(Qt6 REQUIRED COMPONENTS
     Core
     Gui
     Widgets
-    Quick
-    Qml
     Network
     Concurrent
     LinguistTools
-    QuickDialogs2
 )
 
 qt_standard_project_setup()
-
-# Help Qt Creator's QML code model resolve local qmldir-based modules
-# such as `import TZControls 1.0`.
-set(QML_IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/qml" CACHE STRING "Local QML import paths" FORCE)
-set(QML2_IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/qml" CACHE STRING "Local QML import paths" FORCE)
 
 # ── Third-party build options ─────────────────────────────────
 option(BUILD_THIRDPART_OCR "Auto build OCR libs" ON)
@@ -43,23 +35,35 @@ set(TS_FILES
 # ── 平台无关源文件 ────────────────────────────────────────
 set(SOURCES
     src/main.cpp
+    src/app/tzshot_app.cpp
+    src/app/tzshot_app.h
+    src/app/tzshot_services.cpp
+    src/app/tzshot_services.h
+    src/app/tzshot_widget_runtime.cpp
+    src/app/tzshot_widget_runtime.h
     src/tray_icon_helper.cpp
     src/tray_icon_helper.h
     src/language_manager.cpp
     src/language_manager.h
-    src/magnifier_provider.cpp
-    src/magnifier_provider.h
     src/sticky_image_store.cpp
     src/sticky_image_store.h
-    src/sticky_image_provider_proxy.cpp
-    src/sticky_image_provider_proxy.h
     src/instance_activation.cpp
     src/instance_activation.h
     src/singleton.h
+    src/widgets/about_dialog.cpp
+    src/widgets/about_dialog.h
     src/widgets/sticky_pin_widget.cpp
     src/widgets/sticky_pin_widget.h
     src/widgets/sticky_canvas_widget.cpp
     src/widgets/sticky_canvas_widget.h
+    src/widgets/capture_overlay_widget.cpp
+    src/widgets/capture_overlay_widget.h
+    src/widgets/long_capture_controller.cpp
+    src/widgets/long_capture_controller.h
+    src/widgets/magnifier_widget.cpp
+    src/widgets/magnifier_widget.h
+    src/widgets/selection_mask_controller.cpp
+    src/widgets/selection_mask_controller.h
     src/widgets/ocr_result_widget.cpp
     src/widgets/ocr_result_widget.h
     src/widgets/settings_dialog.cpp
@@ -102,9 +106,6 @@ set(SOURCES
     src/ocr/ocr_engine.cpp
     src/ocr/ocr_engine.h
 
-    # PaintBoard
-    src/paint_board/paint_board.cpp
-    src/paint_board/paint_board.h
     src/paint_board/shape/shape.cpp
     src/paint_board/shape/shape.h
     src/paint_board/shape/shape_type.h
@@ -165,10 +166,6 @@ qt_add_executable(TZshot
     ${SOURCES}
 )
 
-set_target_properties(TZshot PROPERTIES
-    QT_QML_IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/qml"
-)
-
 # ── include 路径 ──────────────────────────────────────────
 target_include_directories(TZshot PRIVATE
     src
@@ -197,11 +194,8 @@ target_link_libraries(TZshot PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
-    Qt6::Quick
-    Qt6::Qml
     Qt6::Network
     Qt6::Concurrent
-    Qt6::QuickDialogs2
 )
 
 # ── 平台系统库 ────────────────────────────────────────────
@@ -452,11 +446,6 @@ if(WIN32)
         WIN32_EXECUTABLE $<IF:$<CONFIG:Debug>,FALSE,TRUE>
     )
 endif()
-
-# ── QML 导入路径 ──────────────────────────────────────────
-set_target_properties(TZshot PROPERTIES
-    QT_QML_IMPORT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/qml"
-)
 
 # ── 翻译 ──────────────────────────────────────────────────
 qt_add_translations(TZshot

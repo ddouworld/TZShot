@@ -42,6 +42,19 @@ void StickyViewModel::requestSticky(const QString &imageUrl, const QRect &imgRec
     emit stickyReady(imageUrl, targetRect);
 }
 
+void StickyViewModel::requestStickyImage(const QImage &image, const QRect &imgRect)
+{
+    if (image.isNull()) {
+        return;
+    }
+
+    const QString imageUrl = m_store.storeImage(image);
+    if (imageUrl.isEmpty()) {
+        return;
+    }
+    requestSticky(imageUrl, imgRect);
+}
+
 void StickyViewModel::releaseImage(const QString &imageUrl)
 {
     m_store.releaseImage(imageUrl);

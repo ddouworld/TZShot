@@ -3,12 +3,12 @@
 
 #include <QColor>
 #include <QObject>
-#include <QQuickItem>
 #include <QRect>
-#include <QWindow>
 #include "model/desktop_snapshot.h"
 #include "model/app_settings.h"
 #include "sticky_image_store.h"
+
+class StickyCanvasWidget;
 
 class ScreenshotViewModel : public QObject
 {
@@ -34,10 +34,9 @@ public:
     Q_INVOKABLE void releaseDesktopSnapshot();
     Q_INVOKABLE QColor getPixelColor(int x, int y) const;
     Q_INVOKABLE QRect windowAtPoint(int x, int y) const;
-    Q_INVOKABLE bool captureRectToClipboard(QQuickItem *paintBoard, const QRect &rect);
-    Q_INVOKABLE QString captureRectToBase64(QQuickItem *paintBoard, const QRect &rect);
-    Q_INVOKABLE QString captureRectToStickyUrl(QQuickItem *paintBoard, const QRect &rect);
-    Q_INVOKABLE void grabToPaintBoard(QQuickItem *paintBoard, const QRect &rect);
+    Q_INVOKABLE bool captureRectToClipboard(StickyCanvasWidget *paintBoard, const QRect &rect);
+    Q_INVOKABLE QString captureRectToBase64(StickyCanvasWidget *paintBoard, const QRect &rect);
+    Q_INVOKABLE QString captureRectToStickyUrl(StickyCanvasWidget *paintBoard, const QRect &rect);
     Q_INVOKABLE QImage captureRectToImage(const QRect &rect);
 
     QImage captureRectToImageLive(const QRect &rect);
@@ -45,7 +44,7 @@ public:
 
 private:
     QRect captureRectForDisplay(const QRect &rect) const;
-    QImage captureScreen(QQuickItem *paintBoard,
+    QImage captureScreen(StickyCanvasWidget *paintBoard,
                          const QRect &rect = QRect(),
                          bool setBackground = false);
     bool writeImageToClipboard(const QImage &image);
