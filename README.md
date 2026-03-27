@@ -11,27 +11,35 @@
 详见仓库根目录 [LICENSE](./LICENSE)。
 
 ### 项目简介
-`TZshot` 是一个基于 **Qt 6 + QML + C++** 的截图与贴图工具，支持多屏截图、标注、贴图编辑、OCR、GIF 录制、全局快捷键、系统托盘和 AI 图像编辑。
+`TZshot` 是一个基于 **Qt 6 Widgets + C++** 的截图与贴图工具，支持多屏截图、框选标注、贴图编辑、长截图、OCR、GIF 录制、全局快捷键、系统托盘和 AI 图像编辑。
 
 ### 主要功能
 - 多屏截图（虚拟桌面坐标、跨屏场景）
+- 截图浮层：
+  - 框选、拖拽、八方向调整选区
+  - 放大镜取色预览
+  - 回车执行默认动作，Esc 取消
 - 标注工具：
   - 矩形、圆形、箭头、画笔
   - 文字标注（文本内容、背景开关）
   - 序号标注（支持自动递增）
-  - 高亮笔
   - 马赛克（可调强度）
+  - 模糊
   - 撤销
 - 截图结果：
   - 复制到剪贴板
   - 保存到文件
   - 贴图到桌面
+  - OCR 识别
+  - 长截图
+  - GIF 录制
 - 贴图窗口：
   - 拖拽、透明度调整
   - 缩放、旋转、镜像、1:1 恢复
   - 标注、OCR、右键菜单
   - 完成后复制、另存为/覆盖闭环
-- GIF 录制（可调录制区域）
+- 长截图控制条与预览浮窗
+- GIF 录制（框选区域录制、编码后自动打开保存目录）
 - OCR 识别结果浮窗
 - 全局快捷键（可配置并持久化）
 - 系统托盘菜单
@@ -40,24 +48,40 @@
 
 ### 技术栈
 - C++17
-- Qt 6（Core / Gui / Widgets / Quick / Qml / Network / QuickDialogs2 / LinguistTools）
+- Qt 6（Core / Gui / Widgets / Network / Concurrent / LinguistTools）
 - CMake
 - 全局快捷键：
   - Windows: `RegisterHotKey`
   - Linux(X11): `xcb_grab_key`
 
+### 当前架构
+- `src/app/`
+  - 应用启动、服务组装、Widget 运行时管理
+- `src/widgets/`
+  - 截图浮层、贴图窗口、设置窗口、OCR 结果窗、关于窗口等界面层
+- `src/viewmodel/`
+  - 截图、贴图、长截图、GIF、OCR、存储、AI 等业务逻辑
+- `src/model/`
+  - 桌面快照、应用设置
+- `src/paint_board/shape/`
+  - 各类标注图形实现
+- `resource/`
+  - 图标与 QSS 样式资源
+- `i18n/`
+  - 中英文翻译
+
 ### 目录结构
 ```text
 TZshot/
 ├─ src/
-│  ├─ main.cpp
+│  ├─ app/
+│  ├─ widgets/
 │  ├─ model/
 │  ├─ viewmodel/
 │  ├─ paint_board/
 │  ├─ shortcut_key/
 │  ├─ ocr/
 │  └─ ai_call/
-├─ qml/
 ├─ i18n/
 ├─ resource/
 ├─ thirdpart/
@@ -87,9 +111,14 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
-运行（Windows）：
+运行（Windows，Visual Studio 生成器）：
 ```bash
 ./build/Release/TZshot.exe
+```
+
+运行（Windows，Qt Creator + Ninja 常见路径）：
+```bash
+./build/<kit-name>/TZshot.exe
 ```
 
 运行（Linux，路径以实际生成为准）：
@@ -126,7 +155,8 @@ cmake --build build --config Release
 
 ### 已知说明
 - Linux 全局快捷键目前基于 X11（暂不覆盖 Wayland 原生实现）
-- GIF 与部分平台能力仍可继续做跨平台增强
+- 部分浮层/置顶窗口交互仍以 Windows 体验最完整
+- GIF、OCR 与长截图能力仍可继续做跨平台增强
 
 ### 贡献与安全提示
 - 请勿提交任何真实的 `API Key`、令牌或个人隐私数据。
@@ -142,28 +172,36 @@ This project is licensed under **GNU General Public License v3.0 (GPL-3.0-only)*
 See [LICENSE](./LICENSE) in the repository root.
 
 ### Overview
-`TZshot` is a screenshot and pin-image utility built with **Qt 6 + QML + C++**.  
-It supports multi-screen capture, rich annotations, sticky image editing, OCR, GIF recording, global shortcuts, tray integration, and AI image editing.
+`TZshot` is a screenshot and pin-image utility built with **Qt 6 Widgets + C++**.  
+It supports multi-screen capture, region annotations, sticky image editing, long screenshots, OCR, GIF recording, global shortcuts, tray integration, and AI image editing.
 
 ### Key Features
 - Multi-screen capture (virtual desktop coordinates)
+- Capture overlay:
+  - Region selection, moving, and 8-direction resize
+  - Magnifier preview with pixel color readout
+  - `Enter` performs the default action, `Esc` cancels
 - Annotation tools:
   - Rectangle, circle, arrow, freehand pen
   - Text annotation (text content + background toggle)
   - Number annotation (auto-increment supported)
-  - Highlighter
   - Mosaic (adjustable intensity)
+  - Blur
   - Undo
 - Output actions:
   - Copy to clipboard
   - Save to file
   - Pin to desktop (sticky window)
+  - OCR
+  - Long screenshot
+  - GIF recording
 - Sticky window:
   - Drag, opacity control
   - Zoom, rotate, mirror, reset-to-1:1
   - Annotate, OCR, context menu actions
   - Apply-and-copy / save-as / overwrite workflow
-- GIF recording with adjustable capture area
+- Long screenshot controller with floating preview
+- GIF recording for a selected region, with save folder auto-open after encoding
 - OCR result window
 - Configurable global shortcuts (persisted)
 - System tray menu
@@ -172,17 +210,40 @@ It supports multi-screen capture, rich annotations, sticky image editing, OCR, G
 
 ### Tech Stack
 - C++17
-- Qt 6 (Core / Gui / Widgets / Quick / Qml / Network / QuickDialogs2 / LinguistTools)
+- Qt 6 (Core / Gui / Widgets / Network / Concurrent / LinguistTools)
 - CMake
 - Global shortcuts:
   - Windows: `RegisterHotKey`
   - Linux(X11): `xcb_grab_key`
 
+### Current Architecture
+- `src/app/`
+  - App bootstrap, service wiring, and widget runtime management
+- `src/widgets/`
+  - Capture overlay, sticky windows, settings dialog, OCR result window, about dialog, and related UI
+- `src/viewmodel/`
+  - Business logic for capture, sticky images, long screenshot, GIF, OCR, storage, and AI
+- `src/model/`
+  - Desktop snapshot and persisted app settings
+- `src/paint_board/shape/`
+  - Annotation shape implementations
+- `resource/`
+  - Icons and QSS resources
+- `i18n/`
+  - Chinese and English translations
+
 ### Project Structure
 ```text
 TZshot/
 ├─ src/
-├─ qml/
+│  ├─ app/
+│  ├─ widgets/
+│  ├─ model/
+│  ├─ viewmodel/
+│  ├─ paint_board/
+│  ├─ shortcut_key/
+│  ├─ ocr/
+│  └─ ai_call/
 ├─ i18n/
 ├─ resource/
 ├─ thirdpart/
@@ -215,6 +276,11 @@ cmake --build build --config Release
 Run on Windows:
 ```bash
 ./build/Release/TZshot.exe
+```
+
+Run on Windows with a typical Qt Creator + Ninja kit:
+```bash
+./build/<kit-name>/TZshot.exe
 ```
 
 Run on Linux (path may vary by generator):
@@ -251,7 +317,8 @@ Run on Linux (path may vary by generator):
 
 ### Notes
 - Linux global shortcuts currently rely on X11 (no native Wayland implementation yet)
-- GIF and some platform-dependent capabilities can be further improved cross-platform
+- Windows currently has the most complete floating-window experience
+- GIF, OCR, and long-screenshot flows still have room for more cross-platform refinement
 
 ### Contributing & Security
 - Do not commit real API keys, tokens, or private data.
