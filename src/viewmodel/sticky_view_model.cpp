@@ -1,6 +1,7 @@
 #include "sticky_view_model.h"
 
 #include "ai_view_model.h"
+#include "viewmodel/vision_view_model.h"
 #include "widgets/sticky_pin_widget.h"
 
 #include <QGuiApplication>
@@ -24,6 +25,11 @@ void StickyViewModel::setAiViewModel(AIViewModel *aiViewModel)
     m_aiViewModel = aiViewModel;
 }
 
+void StickyViewModel::setVisionViewModel(VisionViewModel *visionViewModel)
+{
+    m_visionViewModel = visionViewModel;
+}
+
 void StickyViewModel::requestSticky(const QString &imageUrl, const QRect &imgRect)
 {
     if (imageUrl.isEmpty()) {
@@ -34,7 +40,12 @@ void StickyViewModel::requestSticky(const QString &imageUrl, const QRect &imgRec
 #ifdef Q_OS_WIN
     const QImage image = m_store.getImageByUrl(imageUrl);
     if (!image.isNull()) {
-        auto *widget = new StickyPinWidget(imageUrl, targetRect, image, &m_store, m_aiViewModel);
+        auto *widget = new StickyPinWidget(imageUrl,
+                                           targetRect,
+                                           image,
+                                           &m_store,
+                                           m_aiViewModel,
+                                           m_visionViewModel);
         Q_UNUSED(widget);
         return;
     }

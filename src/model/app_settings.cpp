@@ -12,6 +12,13 @@ AppSettings::AppSettings()
     QSettings s;
 
     m_apiKey        = s.value("AI/apiKey", "").toString();
+    m_visionApiKey  = s.value("Vision/apiKey", "").toString();
+    m_visionProvider = s.value("Vision/provider", 0).toInt();
+    m_visionModel = s.value("Vision/model", "doubao-vision-pro-32k-2410128").toString();
+    m_visionProxyEnabled = s.value("Vision/proxyEnabled", false).toBool();
+    m_visionProxyType = s.value("Vision/proxyType", 0).toInt();
+    m_visionProxyHost = s.value("Vision/proxyHost", "127.0.0.1").toString();
+    m_visionProxyPort = s.value("Vision/proxyPort", 7890).toInt();
     m_selectedModel = s.value("AI/selectedModel", 0).toInt();
     // 语言：若用户从未手动设置过，则根据系统语言选择默认值
     if (s.contains("App/language")) {
@@ -58,6 +65,90 @@ void AppSettings::setApiKey(const QString &key)
     if (m_apiKey == key) return;
     m_apiKey = key;
     QSettings().setValue("AI/apiKey", m_apiKey);
+}
+
+QString AppSettings::visionApiKey() const
+{
+    return m_visionApiKey;
+}
+
+void AppSettings::setVisionApiKey(const QString &key)
+{
+    if (m_visionApiKey == key) return;
+    m_visionApiKey = key;
+    QSettings().setValue("Vision/apiKey", m_visionApiKey);
+}
+
+int AppSettings::visionProvider() const
+{
+    return m_visionProvider;
+}
+
+void AppSettings::setVisionProvider(int provider)
+{
+    if (m_visionProvider == provider) return;
+    m_visionProvider = provider;
+    QSettings().setValue("Vision/provider", m_visionProvider);
+}
+
+QString AppSettings::visionModel() const
+{
+    return m_visionModel;
+}
+
+void AppSettings::setVisionModel(const QString &model)
+{
+    if (m_visionModel == model) return;
+    m_visionModel = model;
+    QSettings().setValue("Vision/model", m_visionModel);
+}
+
+bool AppSettings::visionProxyEnabled() const
+{
+    return m_visionProxyEnabled;
+}
+
+void AppSettings::setVisionProxyEnabled(bool enabled)
+{
+    if (m_visionProxyEnabled == enabled) return;
+    m_visionProxyEnabled = enabled;
+    QSettings().setValue("Vision/proxyEnabled", m_visionProxyEnabled);
+}
+
+int AppSettings::visionProxyType() const
+{
+    return m_visionProxyType;
+}
+
+void AppSettings::setVisionProxyType(int type)
+{
+    if (m_visionProxyType == type) return;
+    m_visionProxyType = type;
+    QSettings().setValue("Vision/proxyType", m_visionProxyType);
+}
+
+QString AppSettings::visionProxyHost() const
+{
+    return m_visionProxyHost;
+}
+
+void AppSettings::setVisionProxyHost(const QString &host)
+{
+    if (m_visionProxyHost == host) return;
+    m_visionProxyHost = host;
+    QSettings().setValue("Vision/proxyHost", m_visionProxyHost);
+}
+
+int AppSettings::visionProxyPort() const
+{
+    return m_visionProxyPort;
+}
+
+void AppSettings::setVisionProxyPort(int port)
+{
+    if (m_visionProxyPort == port) return;
+    m_visionProxyPort = port;
+    QSettings().setValue("Vision/proxyPort", m_visionProxyPort);
 }
 
 int AppSettings::selectedModel() const

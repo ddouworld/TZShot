@@ -5,9 +5,11 @@
 #include "viewmodel/gif_record_view_model.h"
 #include "viewmodel/ocr_view_model.h"
 #include "viewmodel/storage_view_model.h"
+#include "viewmodel/vision_view_model.h"
 #include "shortcut_key/globalshortcut.h"
 
 #include <QComboBox>
+#include <QCheckBox>
 #include <QFile>
 #include <QFileDialog>
 #include <QFrame>
@@ -25,6 +27,7 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QLineEdit>
+#include <QSpinBox>
 #include <QWheelEvent>
 
 namespace {
@@ -181,6 +184,7 @@ protected:
 }
 
 SettingsDialog::SettingsDialog(AIViewModel *aiViewModel,
+                               VisionViewModel *visionViewModel,
                                StorageViewModel *storageViewModel,
                                LanguageManager *languageManager,
                                GifRecordViewModel *gifRecordViewModel,
@@ -189,6 +193,7 @@ SettingsDialog::SettingsDialog(AIViewModel *aiViewModel,
                                QWidget *parent)
     : QDialog(parent)
     , m_aiViewModel(aiViewModel)
+    , m_visionViewModel(visionViewModel)
     , m_storageViewModel(storageViewModel)
     , m_languageManager(languageManager)
     , m_gifRecordViewModel(gifRecordViewModel)
@@ -326,25 +331,105 @@ QWidget *SettingsDialog::buildGeneralPage()
         grid->setHorizontalSpacing(12);
         grid->setVerticalSpacing(12);
 
-        addRowLabel(grid, 0, tr("大模型选择"), card);
+        addRowLabel(grid, 0, tr("AI 服务商"), card);
         m_modelCombo = new SettingsComboBox(card);
         m_modelCombo->addItems({ tr("阿里云百炼"), tr("火山引擎") });
         if (m_aiViewModel) m_modelCombo->setCurrentIndex(m_aiViewModel->selectedModel());
         connect(m_modelCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
-            if (m_aiViewModel) m_aiViewModel->setSelectedModel(index);
+            if (m_aiViewModel) {
+                m_aiViewModel->setSelectedModel(index);
+            }
+            if (m_visionViewModel) {
+                const int visionProvider = aiProviderToVisionProvider(index);
+                m_visionViewModel->setProvider(visionProvider);
+                populateVisionModelOptions(visionProvider, m_visionViewModel->model());
+            }
         });
         grid->addWidget(m_modelCombo, 0, 1, 1, 2);
 
         addRowLabel(grid, 1, QStringLiteral("API Key"), card);
         m_apiKeyEdit = new QLineEdit(card);
-        if (m_aiViewModel) m_apiKeyEdit->setText(m_aiViewModel->apiKey());
+        const QString sharedApiKey = m_aiViewModel && !m_aiViewModel->apiKey().isEmpty()
+            ? m_aiViewModel->apiKey()
+            : (m_visionViewModel ? m_visionViewModel->apiKey() : QString());
+        m_apiKeyEdit->setText(sharedApiKey);
         grid->addWidget(m_apiKeyEdit, 1, 1);
         auto *saveApi = new QPushButton(tr("保存"), card);
         saveApi->setObjectName(QStringLiteral("primaryButton"));
         connect(saveApi, &QPushButton::clicked, this, [this]() {
-            if (m_aiViewModel) m_aiViewModel->setApiKey(m_apiKeyEdit->text());
+            const QString apiKey = m_apiKeyEdit ? m_apiKeyEdit->text() : QString();
+            if (m_aiViewModel) {
+                m_aiViewModel->setApiKey(apiKey);
+            }
+            if (m_visionViewModel) {
+                m_visionViewModel->setApiKey(apiKey);
+            }
+            emit infoMessageRequested(tr("API Key 已保存"),
+                                      tr("AI 图像编辑和视觉理解已同步更新。"));
         });
         grid->addWidget(saveApi, 1, 2);
+
+        if (m_visionViewModel && m_modelCombo) {
+            m_modelCombo->setCurrentIndex(visionProviderToAiProvider(m_visionViewModel->provider()));
+        }
+
+        addRowLabel(grid, 2, tr("视觉模型"), card);
+        m_visionModelCombo = new SettingsComboBox(card);
+        m_visionModelCombo->setEditable(true);
+        populateVisionModelOptions(m_visionViewModel ? m_visionViewModel->provider()
+                                                     : aiProviderToVisionProvider(m_aiViewModel ? m_aiViewModel->selectedModel() : 0),
+                                   m_visionViewModel ? m_visionViewModel->model() : QString());
+        connect(m_visionModelCombo, &QComboBox::editTextChanged, this, [this](const QString &text) {
+            if (m_visionViewModel) {
+                m_visionViewModel->setModel(text);
+            }
+        });
+        grid->addWidget(m_visionModelCombo, 2, 1, 1, 2);
+
+        addRowLabel(grid, 3, tr("启用代理"), card);
+        m_visionProxyEnabledCheck = new QCheckBox(tr("视觉请求走代理"), card);
+        if (m_visionViewModel) m_visionProxyEnabledCheck->setChecked(m_visionViewModel->proxyEnabled());
+        connect(m_visionProxyEnabledCheck, &QCheckBox::toggled, this, [this](bool checked) {
+            if (m_visionViewModel) m_visionViewModel->setProxyEnabled(checked);
+            if (m_visionProxyTypeCombo) m_visionProxyTypeCombo->setEnabled(checked);
+            if (m_visionProxyHostEdit) m_visionProxyHostEdit->setEnabled(checked);
+            if (m_visionProxyPortSpin) m_visionProxyPortSpin->setEnabled(checked);
+        });
+        grid->addWidget(m_visionProxyEnabledCheck, 3, 1, 1, 2);
+
+        addRowLabel(grid, 4, tr("代理类型"), card);
+        m_visionProxyTypeCombo = new SettingsComboBox(card);
+        m_visionProxyTypeCombo->addItems({ QStringLiteral("HTTP"), QStringLiteral("SOCKS5") });
+        if (m_visionViewModel) m_visionProxyTypeCombo->setCurrentIndex(m_visionViewModel->proxyType());
+        connect(m_visionProxyTypeCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
+            if (m_visionViewModel) m_visionViewModel->setProxyType(index);
+        });
+        grid->addWidget(m_visionProxyTypeCombo, 4, 1, 1, 2);
+
+        addRowLabel(grid, 5, tr("代理地址"), card);
+        m_visionProxyHostEdit = new QLineEdit(card);
+        m_visionProxyHostEdit->setPlaceholderText(QStringLiteral("127.0.0.1"));
+        if (m_visionViewModel) m_visionProxyHostEdit->setText(m_visionViewModel->proxyHost());
+        connect(m_visionProxyHostEdit, &QLineEdit::editingFinished, this, [this]() {
+            if (m_visionViewModel && m_visionProxyHostEdit) {
+                m_visionViewModel->setProxyHost(m_visionProxyHostEdit->text().trimmed());
+            }
+        });
+        grid->addWidget(m_visionProxyHostEdit, 5, 1, 1, 2);
+
+        addRowLabel(grid, 6, tr("代理端口"), card);
+        m_visionProxyPortSpin = new QSpinBox(card);
+        m_visionProxyPortSpin->setRange(1, 65535);
+        if (m_visionViewModel) m_visionProxyPortSpin->setValue(m_visionViewModel->proxyPort());
+        connect(m_visionProxyPortSpin, &QSpinBox::valueChanged, this, [this](int value) {
+            if (m_visionViewModel) m_visionViewModel->setProxyPort(value);
+        });
+        grid->addWidget(m_visionProxyPortSpin, 6, 1, 1, 2);
+
+        const bool proxyEnabled = m_visionViewModel && m_visionViewModel->proxyEnabled();
+        m_visionProxyTypeCombo->setEnabled(proxyEnabled);
+        m_visionProxyHostEdit->setEnabled(proxyEnabled);
+        m_visionProxyPortSpin->setEnabled(proxyEnabled);
         outer->addWidget(card);
     }
 
@@ -453,6 +538,44 @@ QWidget *SettingsDialog::buildGeneralPage()
 
     outer->addStretch();
     return container;
+}
+
+void SettingsDialog::populateVisionModelOptions(int provider, const QString &currentModel)
+{
+    if (!m_visionModelCombo) {
+        return;
+    }
+
+    const QString normalizedCurrent = currentModel.trimmed();
+    m_visionModelCombo->blockSignals(true);
+    m_visionModelCombo->clear();
+
+    if (provider == 1) {
+        m_visionModelCombo->addItems({ QStringLiteral("qwen-vl-plus"),
+                                       QStringLiteral("qwen-vl-max") });
+    } else {
+        m_visionModelCombo->addItem(QStringLiteral("doubao-vision-pro-32k-2410128"));
+    }
+
+    const QString finalModel = normalizedCurrent.isEmpty()
+        ? m_visionModelCombo->itemText(0)
+        : normalizedCurrent;
+
+    if (m_visionModelCombo->findText(finalModel) < 0) {
+        m_visionModelCombo->addItem(finalModel);
+    }
+    m_visionModelCombo->setCurrentText(finalModel);
+    m_visionModelCombo->blockSignals(false);
+}
+
+int SettingsDialog::aiProviderToVisionProvider(int aiProvider) const
+{
+    return aiProvider == 0 ? 1 : 0;
+}
+
+int SettingsDialog::visionProviderToAiProvider(int visionProvider) const
+{
+    return visionProvider == 1 ? 0 : 1;
 }
 
 QWidget *SettingsDialog::createHotkeyRow(const QString &labelText, int actionId, const QString &seq)

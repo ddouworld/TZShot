@@ -1,7 +1,9 @@
 #include "widgets/sticky_pin_widget.h"
 
 #include "viewmodel/ai_view_model.h"
+#include "viewmodel/vision_view_model.h"
 #include "widgets/sticky_canvas_widget.h"
+#include "widgets/vision_result_widget.h"
 #include "sticky_image_store.h"
 
 #include <QCheckBox>
@@ -206,6 +208,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
                                  const QImage &image,
                                  StickyImageStore *store,
                                  AIViewModel *aiViewModel,
+                                 VisionViewModel *visionViewModel,
                                  QWidget *parent)
     : QWidget(parent)
     , m_imageUrl(imageUrl)
@@ -213,6 +216,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
     , m_image(image)
     , m_store(store)
     , m_aiViewModel(aiViewModel)
+    , m_visionViewModel(visionViewModel)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -274,6 +278,9 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
                 [this](const QString &errorMsg) {
             QMessageBox::warning(this, tr("AI 编辑失败"), errorMsg);
         });
+    }
+    if (m_visionViewModel) {
+        m_visionResultWidget = new VisionResultWidget(m_visionViewModel, this);
     }
 
     m_toolOptions = new QWidget(this);
@@ -429,6 +436,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
     m_numberButton = new QToolButton(m_toolbar);
     m_undoButton = new QToolButton(m_toolbar);
     m_aiButton = new QToolButton(m_toolbar);
+    m_visionButton = new QToolButton(m_toolbar);
     m_copyButton = new QToolButton(m_toolbar);
     m_saveButton = new QToolButton(m_toolbar);
     m_zoomLabel = new QLabel(m_toolbar);
@@ -455,6 +463,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
     setupButton(m_numberButton, tr("序号"));
     setupButton(m_undoButton, tr("撤销"));
     setupButton(m_aiButton, tr("AI 编辑"));
+    setupButton(m_visionButton, tr("AI 理解"));
     setupButton(m_copyButton, tr("复制"));
     setupButton(m_saveButton, tr("保存"));
     setupButton(m_toggleToolbarButton, tr("隐藏工具栏"));
@@ -491,6 +500,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
     m_numberButton->setIcon(QIcon(QStringLiteral(":/resource/img/lc_list_ordered.svg")));
     m_undoButton->setIcon(QIcon(QStringLiteral(":/resource/img/lc_undo.svg")));
     m_aiButton->setIcon(QIcon(QStringLiteral(":/resource/img/lc_chat.svg")));
+    m_visionButton->setIcon(QIcon(QStringLiteral(":/resource/img/lc_ocr.svg")));
     QIcon copyIcon = QIcon::fromTheme(QStringLiteral("edit-copy"));
     if (copyIcon.isNull()) {
         copyIcon = style()->standardIcon(QStyle::SP_FileDialogDetailedView);
@@ -527,6 +537,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
         }
     });
     connect(m_aiButton, &QToolButton::clicked, this, &StickyPinWidget::openAiEditor);
+    connect(m_visionButton, &QToolButton::clicked, this, &StickyPinWidget::openVisionWindow);
     connect(m_copyButton, &QToolButton::clicked, this, [this]() {
         if (m_store) {
             m_store->copyImageToClipboard(m_imageUrl);
@@ -692,6 +703,7 @@ void StickyPinWidget::contextMenuEvent(QContextMenuEvent *event)
     QAction *copyAction = menu.addAction(tr("复制"));
     QAction *saveAction = menu.addAction(tr("保存原图"));
     QAction *aiAction = menu.addAction(tr("AI 编辑"));
+    QAction *visionAction = menu.addAction(tr("AI 理解"));
     QAction *toggleAction = menu.addAction(m_toolbarVisible ? tr("隐藏工具栏") : tr("显示工具栏"));
     QAction *shadowAction = menu.addAction(m_shadowVisible ? tr("隐藏阴影") : tr("显示阴影"));
     menu.addSeparator();
@@ -709,6 +721,10 @@ void StickyPinWidget::contextMenuEvent(QContextMenuEvent *event)
     }
     if (chosen == aiAction) {
         openAiEditor();
+        return;
+    }
+    if (chosen == visionAction) {
+        openVisionWindow();
         return;
     }
     if (chosen == toggleAction) {
@@ -807,6 +823,15 @@ void StickyPinWidget::openAiEditor()
     }
 
     m_aiViewModel->sendPrompt(trimmed, m_imageUrl);
+}
+
+void StickyPinWidget::openVisionWindow()
+{
+    if (!m_visionViewModel || !m_visionResultWidget) {
+        QMessageBox::information(this, tr("AI 理解"), tr("视觉理解功能当前不可用。"));
+        return;
+    }
+    m_visionResultWidget->showForImage(m_imageUrl, m_image);
 }
 
 void StickyPinWidget::applyAiImage(const QString &oldImageUrl, const QString &newImageUrl)
@@ -924,7 +949,7 @@ void StickyPinWidget::updateLayoutAndSize()
     if (m_pencilButton && m_rectButton && m_circleButton && m_arrowButton
         && m_highlightButton && m_mosaicButton && m_blurButton
         && m_textButton && m_numberButton
-        && m_undoButton && m_aiButton && m_copyButton && m_saveButton && m_zoomLabel
+        && m_undoButton && m_aiButton && m_visionButton && m_copyButton && m_saveButton && m_zoomLabel
         && m_toggleToolbarButton && m_closeButton) {
         const int buttonH = 32;
         const int buttonW = 32;
@@ -953,6 +978,8 @@ void StickyPinWidget::updateLayoutAndSize()
         m_undoButton->setGeometry(x, buttonY, buttonW, buttonH);
         x += buttonW + gap;
         m_aiButton->setGeometry(x, buttonY, buttonW, buttonH);
+        x += buttonW + gap;
+        m_visionButton->setGeometry(x, buttonY, buttonW, buttonH);
         x += buttonW + gap;
         m_copyButton->setGeometry(x, buttonY, buttonW, buttonH);
         x += buttonW + gap;
@@ -1069,5 +1096,5 @@ int StickyPinWidget::toolbarHeight() const
 
 int StickyPinWidget::toolbarWidth() const
 {
-    return 32 * 15 + 52 + 2 * 15 + 12;
+    return 32 * 16 + 52 + 2 * 16 + 12;
 }

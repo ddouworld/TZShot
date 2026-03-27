@@ -11,6 +11,7 @@ TZShotWidgetRuntime::TZShotWidgetRuntime(TZShotServices &services, QObject *pare
                              &services.ocrViewModel(),
                              &services.gifRecordViewModel())
     , m_settingsDialog(&services.aiViewModel(),
+                       &services.visionViewModel(),
                        &services.storageViewModel(),
                        &services.languageManager(),
                        &services.gifRecordViewModel(),

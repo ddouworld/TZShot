@@ -66,6 +66,8 @@ set(SOURCES
     src/widgets/selection_mask_controller.h
     src/widgets/ocr_result_widget.cpp
     src/widgets/ocr_result_widget.h
+    src/widgets/vision_result_widget.cpp
+    src/widgets/vision_result_widget.h
     src/widgets/settings_dialog.cpp
     src/widgets/settings_dialog.h
     src/widgets/widget_window_bridge.cpp
@@ -92,6 +94,8 @@ set(SOURCES
     src/viewmodel/scroll_capture_view_model.h
     src/viewmodel/ocr_view_model.cpp
     src/viewmodel/ocr_view_model.h
+    src/viewmodel/vision_view_model.cpp
+    src/viewmodel/vision_view_model.h
 
     # GIF Encoder
     src/gif_encoder/gif.h
@@ -138,6 +142,8 @@ set(SOURCES
     src/ai_call/qwen_ai_call.h
     src/ai_call/seedream_ai_call.cpp
     src/ai_call/seedream_ai_call.h
+    src/ai_call/doubao_vision_call.cpp
+    src/ai_call/doubao_vision_call.h
 
     # Shortcut — 跨平台公共部分
     src/shortcut_key/globalshortcut.cpp

@@ -15,6 +15,7 @@
 #include "viewmodel/scroll_capture_view_model.h"
 #include "viewmodel/sticky_view_model.h"
 #include "viewmodel/storage_view_model.h"
+#include "viewmodel/vision_view_model.h"
 
 class TZShotServices : public QObject
 {
@@ -34,6 +35,7 @@ public:
     GifRecordViewModel& gifRecordViewModel() { return m_gifRecordViewModel; }
     ScrollCaptureViewModel& scrollCaptureViewModel() { return m_scrollCaptureViewModel; }
     OcrViewModel& ocrViewModel() { return m_ocrViewModel; }
+    VisionViewModel& visionViewModel() { return m_visionViewModel; }
     GlobalShortcut& globalShortcut() { return m_globalShortcut; }
 
 private:
@@ -48,6 +50,7 @@ private:
     GifRecordViewModel m_gifRecordViewModel;
     ScrollCaptureViewModel m_scrollCaptureViewModel;
     OcrViewModel m_ocrViewModel;
+    VisionViewModel m_visionViewModel;
     GlobalShortcut m_globalShortcut;
 };
 

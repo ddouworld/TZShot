@@ -18,6 +18,20 @@ public:
     // AI 配置
     QString apiKey() const;
     void    setApiKey(const QString &key);
+    QString visionApiKey() const;
+    void    setVisionApiKey(const QString &key);
+    int     visionProvider() const;
+    void    setVisionProvider(int provider);
+    QString visionModel() const;
+    void    setVisionModel(const QString &model);
+    bool    visionProxyEnabled() const;
+    void    setVisionProxyEnabled(bool enabled);
+    int     visionProxyType() const;
+    void    setVisionProxyType(int type);
+    QString visionProxyHost() const;
+    void    setVisionProxyHost(const QString &host);
+    int     visionProxyPort() const;
+    void    setVisionProxyPort(int port);
 
     int  selectedModel() const;
     void setSelectedModel(int index);
@@ -36,6 +50,13 @@ public:
 
 private:
     QString m_apiKey;
+    QString m_visionApiKey;
+    int     m_visionProvider = 0;
+    QString m_visionModel = QStringLiteral("doubao-vision-pro-32k-2410128");
+    bool    m_visionProxyEnabled = false;
+    int     m_visionProxyType = 0;
+    QString m_visionProxyHost = QStringLiteral("127.0.0.1");
+    int     m_visionProxyPort = 7890;
     int     m_selectedModel = 0;
     QString m_language      = "zh_CN";
     QString m_savePath;

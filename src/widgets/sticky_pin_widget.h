@@ -12,12 +12,14 @@
 
 class StickyImageStore;
 class AIViewModel;
+class VisionViewModel;
 class QCheckBox;
 class QLabel;
 class QLineEdit;
 class QSpinBox;
 class QToolButton;
 class StickyCanvasWidget;
+class VisionResultWidget;
 
 class StickyPinWidget : public QWidget
 {
@@ -29,6 +31,7 @@ public:
                     const QImage &image,
                     StickyImageStore *store,
                     AIViewModel *aiViewModel = nullptr,
+                    VisionViewModel *visionViewModel = nullptr,
                     QWidget *parent = nullptr);
     ~StickyPinWidget() override;
 
@@ -47,6 +50,7 @@ private:
     QToolButton *currentActiveToolButton() const;
     void setZoomFactor(qreal value);
     void openAiEditor();
+    void openVisionWindow();
     void applyAiImage(const QString &oldImageUrl, const QString &newImageUrl);
     void releaseStoredImage();
     bool saveCurrentImage();
@@ -71,7 +75,9 @@ private:
     QSize m_imageDisplaySize;
     QPointer<StickyImageStore> m_store;
     QPointer<AIViewModel> m_aiViewModel;
+    QPointer<VisionViewModel> m_visionViewModel;
     StickyCanvasWidget *m_canvas = nullptr;
+    VisionResultWidget *m_visionResultWidget = nullptr;
     QWidget *m_toolOptions = nullptr;
     QWidget *m_toolbar = nullptr;
     QLabel *m_zoomLabel = nullptr;
@@ -96,6 +102,7 @@ private:
     QToolButton *m_numberButton = nullptr;
     QToolButton *m_undoButton = nullptr;
     QToolButton *m_aiButton = nullptr;
+    QToolButton *m_visionButton = nullptr;
     QToolButton *m_copyButton = nullptr;
     QToolButton *m_saveButton = nullptr;
     QToolButton *m_toggleToolbarButton = nullptr;

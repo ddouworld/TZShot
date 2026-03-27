@@ -49,6 +49,10 @@ void TZShotApp::setupConnections()
     connect(&m_services->ocrViewModel(), &OcrViewModel::recognizeFailed, this, [this](const QString &errorMessage) {
         m_runtime->trayHelper().showMessage(tr("OCR 识别失败"), errorMessage);
     });
+    connect(&m_runtime->settingsDialog(), &SettingsDialog::infoMessageRequested, this,
+            [this](const QString &title, const QString &message) {
+        m_runtime->trayHelper().showMessage(title, message);
+    });
 
     connect(m_instanceActivation, &InstanceActivation::activationRequested, this, [this]() {
         showCaptureOverlay(QStringLiteral("copy"));

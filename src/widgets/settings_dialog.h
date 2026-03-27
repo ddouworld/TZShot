@@ -5,6 +5,7 @@
 #include <QDialog>
 
 class AIViewModel;
+class VisionViewModel;
 class StorageViewModel;
 class LanguageManager;
 class GifRecordViewModel;
@@ -16,6 +17,8 @@ class QLabel;
 class QLineEdit;
 class QComboBox;
 class QTextEdit;
+class QCheckBox;
+class QSpinBox;
 
 class SettingsDialog : public QDialog
 {
@@ -23,6 +26,7 @@ class SettingsDialog : public QDialog
 
 public:
     SettingsDialog(AIViewModel *aiViewModel,
+                   VisionViewModel *visionViewModel,
                    StorageViewModel *storageViewModel,
                    LanguageManager *languageManager,
                    GifRecordViewModel *gifRecordViewModel,
@@ -32,16 +36,23 @@ public:
 
     void showAndActivate();
 
+signals:
+    void infoMessageRequested(const QString &title, const QString &message);
+
 private:
     QWidget *buildGeneralPage();
     QWidget *buildHotkeyPage();
     QWidget *createSectionTitle(const QString &title);
     QWidget *createCard();
     QWidget *createHotkeyRow(const QString &label, int actionId, const QString &seq);
+    void populateVisionModelOptions(int provider, const QString &currentModel = QString());
+    int aiProviderToVisionProvider(int aiProvider) const;
+    int visionProviderToAiProvider(int visionProvider) const;
     QString shortcutForAction(int actionId) const;
     void refreshHotkeyPage();
 
     QPointer<AIViewModel> m_aiViewModel;
+    QPointer<VisionViewModel> m_visionViewModel;
     QPointer<StorageViewModel> m_storageViewModel;
     QPointer<LanguageManager> m_languageManager;
     QPointer<GifRecordViewModel> m_gifRecordViewModel;
@@ -53,6 +64,11 @@ private:
 
     QComboBox *m_modelCombo = nullptr;
     QLineEdit *m_apiKeyEdit = nullptr;
+    QComboBox *m_visionModelCombo = nullptr;
+    QCheckBox *m_visionProxyEnabledCheck = nullptr;
+    QComboBox *m_visionProxyTypeCombo = nullptr;
+    QLineEdit *m_visionProxyHostEdit = nullptr;
+    QSpinBox *m_visionProxyPortSpin = nullptr;
     QLabel *m_savePathLabel = nullptr;
     QComboBox *m_languageCombo = nullptr;
     QComboBox *m_gifPresetCombo = nullptr;
