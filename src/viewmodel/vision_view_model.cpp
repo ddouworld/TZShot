@@ -9,25 +9,33 @@
 namespace {
 constexpr int kMaxImageEdge = 1600;
 
-QString defaultVisionModelForProvider(int provider)
+QString defaultVisionModelForProvider(int provider, bool webSearchEnabled)
 {
     switch (provider) {
     case 1:
-        return QStringLiteral("qwen-vl-plus");
+        return webSearchEnabled
+            ? QStringLiteral("qwen3-max-2026-01-23")
+            : QStringLiteral("qwen-vl-plus");
     case 0:
     default:
-        return QStringLiteral("doubao-vision-pro-32k-2410128");
+        return webSearchEnabled
+            ? QStringLiteral("doubao-seed-1-6-250615")
+            : QStringLiteral("doubao-vision-pro-32k-2410128");
     }
 }
 
-QString apiUrlForProvider(int provider)
+QString apiUrlForProvider(int provider, bool webSearchEnabled)
 {
     switch (provider) {
     case 1:
-        return QStringLiteral("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
+        return webSearchEnabled
+            ? QStringLiteral("https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1/responses")
+            : QStringLiteral("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
     case 0:
     default:
-        return QStringLiteral("https://ark.cn-beijing.volces.com/api/v3/chat/completions");
+        return webSearchEnabled
+            ? QStringLiteral("https://ark.cn-beijing.volces.com/api/v3/responses")
+            : QStringLiteral("https://ark.cn-beijing.volces.com/api/v3/chat/completions");
     }
 }
 }
@@ -42,6 +50,12 @@ VisionViewModel::VisionViewModel(AppSettings &settings,
 {
     syncCallSettings();
     syncProxySettings();
+    connect(m_call, &AICallBase::requestDelta, this, [this](const QString &delta) {
+        if (delta.isEmpty()) {
+            return;
+        }
+        emit analysisDelta(m_pendingImageUrl, m_pendingPrompt, delta);
+    });
     connect(m_call, &AICallBase::requestSuccess, this, [this](const QString &response) {
         setLoading(false);
         emit analysisSucceeded(m_pendingImageUrl, m_pendingPrompt, response, m_pendingImage);
@@ -79,6 +93,11 @@ int VisionViewModel::provider() const
 QString VisionViewModel::model() const
 {
     return m_settings.visionModel();
+}
+
+bool VisionViewModel::webSearchEnabled() const
+{
+    return m_settings.visionWebSearchEnabled();
 }
 
 bool VisionViewModel::proxyEnabled() const
@@ -124,7 +143,7 @@ void VisionViewModel::setProvider(int provider)
     }
 
     m_settings.setVisionProvider(provider);
-    m_settings.setVisionModel(defaultVisionModelForProvider(provider));
+    m_settings.setVisionModel(defaultVisionModelForProvider(provider, m_settings.visionWebSearchEnabled()));
     syncCallSettings();
 }
 
@@ -140,6 +159,27 @@ void VisionViewModel::setModel(const QString &model)
 
     m_settings.setVisionModel(normalizedModel);
     syncCallSettings();
+}
+
+void VisionViewModel::setWebSearchEnabled(bool enabled)
+{
+    if (m_settings.visionWebSearchEnabled() == enabled) {
+        return;
+    }
+
+    const int currentProvider = m_settings.visionProvider();
+    const QString currentModel = m_settings.visionModel().trimmed();
+    const QString oldDefaultModel = defaultVisionModelForProvider(currentProvider,
+                                                                  m_settings.visionWebSearchEnabled());
+    const QString newDefaultModel = defaultVisionModelForProvider(currentProvider, enabled);
+
+    m_settings.setVisionWebSearchEnabled(enabled);
+    if (currentModel.isEmpty() || currentModel == oldDefaultModel) {
+        m_settings.setVisionModel(newDefaultModel);
+    }
+
+    syncCallSettings();
+    emit webSearchEnabledChanged(enabled);
 }
 
 void VisionViewModel::setProxyEnabled(bool enabled)
@@ -224,12 +264,16 @@ void VisionViewModel::syncCallSettings()
 
     QString modelName = m_settings.visionModel().trimmed();
     if (modelName.isEmpty()) {
-        modelName = defaultVisionModelForProvider(m_settings.visionProvider());
+        modelName = defaultVisionModelForProvider(m_settings.visionProvider(),
+                                                  m_settings.visionWebSearchEnabled());
         m_settings.setVisionModel(modelName);
     }
 
-    m_call->setApiUrl(apiUrlForProvider(m_settings.visionProvider()));
+    const bool webSearchEnabled = m_settings.visionWebSearchEnabled();
+    const bool useResponsesApi = webSearchEnabled;
+    m_call->setApiUrl(apiUrlForProvider(m_settings.visionProvider(), useResponsesApi));
     m_call->setModel(modelName);
+    m_call->setWebSearchEnabled(webSearchEnabled);
 }
 
 void VisionViewModel::syncProxySettings()

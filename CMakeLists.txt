@@ -165,6 +165,7 @@ endif()
 
 if(WIN32)
     list(APPEND SOURCES
+        resource/windows/tzshot.rc
         src/shortcut_key/win_grab.c
         src/shortcut_key/win_grab.h
     )

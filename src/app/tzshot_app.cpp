@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QCoreApplication>
+#include <QIcon>
 
 #include "app/tzshot_services.h"
 #include "app/tzshot_widget_runtime.h"
@@ -33,6 +34,7 @@ void TZShotApp::configureApplication() const
     QCoreApplication::setOrganizationName("TZshot");
     QCoreApplication::setOrganizationDomain("tzshot.local");
     QCoreApplication::setApplicationName("TZshot");
+    m_app.setWindowIcon(QIcon(QStringLiteral(":/resource/img/app_icon.ico")));
     m_app.setQuitOnLastWindowClosed(false);
 }
 

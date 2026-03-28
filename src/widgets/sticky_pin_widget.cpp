@@ -751,7 +751,7 @@ void StickyPinWidget::updateToolOptionsPanel()
     const Shapeype type = m_canvas->activeShapeType();
     const bool showTextOptions = (type == TEXT);
     const bool showNumberOptions = (type == NUMBER);
-    const bool showColorOptions = (type != HIGHLIGHT && type != MOSAIC && type != BLUR);
+    const bool showColorOptions = (type != MOSAIC && type != BLUR);
 
     int x = 10;
     int y = 10;

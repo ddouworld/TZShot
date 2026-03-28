@@ -65,6 +65,7 @@ private:
     QComboBox *m_modelCombo = nullptr;
     QLineEdit *m_apiKeyEdit = nullptr;
     QComboBox *m_visionModelCombo = nullptr;
+    QCheckBox *m_visionWebSearchCheck = nullptr;
     QCheckBox *m_visionProxyEnabledCheck = nullptr;
     QComboBox *m_visionProxyTypeCombo = nullptr;
     QLineEdit *m_visionProxyHostEdit = nullptr;

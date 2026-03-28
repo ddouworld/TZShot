@@ -52,6 +52,8 @@ public:
 signals:
     // 请求成功，返回响应内容
     void requestSuccess(const QString &response);
+    // 流式增量文本
+    void requestDelta(const QString &delta);
     // 请求失败，返回错误类型和错误信息
     void requestFailed(AIErrorType errorType, const QString &errorMsg);
     // 请求进度（可选，如流式响应）

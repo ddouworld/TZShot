@@ -15,6 +15,7 @@ AppSettings::AppSettings()
     m_visionApiKey  = s.value("Vision/apiKey", "").toString();
     m_visionProvider = s.value("Vision/provider", 0).toInt();
     m_visionModel = s.value("Vision/model", "doubao-vision-pro-32k-2410128").toString();
+    m_visionWebSearchEnabled = s.value("Vision/webSearchEnabled", true).toBool();
     m_visionProxyEnabled = s.value("Vision/proxyEnabled", false).toBool();
     m_visionProxyType = s.value("Vision/proxyType", 0).toInt();
     m_visionProxyHost = s.value("Vision/proxyHost", "127.0.0.1").toString();
@@ -101,6 +102,18 @@ void AppSettings::setVisionModel(const QString &model)
     if (m_visionModel == model) return;
     m_visionModel = model;
     QSettings().setValue("Vision/model", m_visionModel);
+}
+
+bool AppSettings::visionWebSearchEnabled() const
+{
+    return m_visionWebSearchEnabled;
+}
+
+void AppSettings::setVisionWebSearchEnabled(bool enabled)
+{
+    if (m_visionWebSearchEnabled == enabled) return;
+    m_visionWebSearchEnabled = enabled;
+    QSettings().setValue("Vision/webSearchEnabled", m_visionWebSearchEnabled);
 }
 
 bool AppSettings::visionProxyEnabled() const

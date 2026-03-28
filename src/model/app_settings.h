@@ -24,6 +24,8 @@ public:
     void    setVisionProvider(int provider);
     QString visionModel() const;
     void    setVisionModel(const QString &model);
+    bool    visionWebSearchEnabled() const;
+    void    setVisionWebSearchEnabled(bool enabled);
     bool    visionProxyEnabled() const;
     void    setVisionProxyEnabled(bool enabled);
     int     visionProxyType() const;
@@ -53,6 +55,7 @@ private:
     QString m_visionApiKey;
     int     m_visionProvider = 0;
     QString m_visionModel = QStringLiteral("doubao-vision-pro-32k-2410128");
+    bool    m_visionWebSearchEnabled = true;
     bool    m_visionProxyEnabled = false;
     int     m_visionProxyType = 0;
     QString m_visionProxyHost = QStringLiteral("127.0.0.1");

@@ -15,6 +15,7 @@
 #include <QPushButton>
 #include <QScreen>
 #include <QTextEdit>
+#include <QTextCursor>
 #include <QVBoxLayout>
 #include <QLineEdit>
 
@@ -186,16 +187,29 @@ VisionResultWidget::VisionResultWidget(VisionViewModel *viewModel, QWidget *pare
             m_resultEdit->clear();
             setLoadingState(true, tr("正在分析图片内容…"));
         });
+        connect(m_viewModel, &VisionViewModel::analysisDelta, this,
+                [this](const QString &imageUrl, const QString &, const QString &delta) {
+            if (imageUrl != m_imageUrl || delta.isEmpty()) {
+                return;
+            }
+            m_resultMarkdown += delta;
+            m_resultEdit->setPlainText(m_resultMarkdown);
+            m_resultEdit->moveCursor(QTextCursor::End);
+            m_statusLabel->setText(tr("正在生成回答…"));
+            m_copyButton->setEnabled(!m_resultMarkdown.trimmed().isEmpty());
+        });
         connect(m_viewModel, &VisionViewModel::analysisSucceeded, this,
                 [this](const QString &imageUrl, const QString &, const QString &result, const QImage &image) {
             if (imageUrl != m_imageUrl) {
                 return;
             }
             m_image = image;
-            m_resultMarkdown = result;
-            m_resultEdit->setMarkdown(result);
+            if (!result.trimmed().isEmpty()) {
+                m_resultMarkdown = result;
+            }
+            m_resultEdit->setMarkdown(m_resultMarkdown);
             setLoadingState(false, tr("分析完成。"));
-            m_copyButton->setEnabled(!result.trimmed().isEmpty());
+            m_copyButton->setEnabled(!m_resultMarkdown.trimmed().isEmpty());
             showAndActivate();
         });
         connect(m_viewModel, &VisionViewModel::analysisFailed, this,

@@ -386,7 +386,18 @@ QWidget *SettingsDialog::buildGeneralPage()
         });
         grid->addWidget(m_visionModelCombo, 2, 1, 1, 2);
 
-        addRowLabel(grid, 3, tr("启用代理"), card);
+        addRowLabel(grid, 3, tr("联网搜索"), card);
+        m_visionWebSearchCheck = new QCheckBox(tr("AI 理解启用联网搜索"), card);
+        if (m_visionViewModel) m_visionWebSearchCheck->setChecked(m_visionViewModel->webSearchEnabled());
+        connect(m_visionWebSearchCheck, &QCheckBox::toggled, this, [this](bool checked) {
+            if (m_visionViewModel) {
+                m_visionViewModel->setWebSearchEnabled(checked);
+                populateVisionModelOptions(m_visionViewModel->provider(), m_visionViewModel->model());
+            }
+        });
+        grid->addWidget(m_visionWebSearchCheck, 3, 1, 1, 2);
+
+        addRowLabel(grid, 4, tr("启用代理"), card);
         m_visionProxyEnabledCheck = new QCheckBox(tr("视觉请求走代理"), card);
         if (m_visionViewModel) m_visionProxyEnabledCheck->setChecked(m_visionViewModel->proxyEnabled());
         connect(m_visionProxyEnabledCheck, &QCheckBox::toggled, this, [this](bool checked) {
@@ -395,18 +406,18 @@ QWidget *SettingsDialog::buildGeneralPage()
             if (m_visionProxyHostEdit) m_visionProxyHostEdit->setEnabled(checked);
             if (m_visionProxyPortSpin) m_visionProxyPortSpin->setEnabled(checked);
         });
-        grid->addWidget(m_visionProxyEnabledCheck, 3, 1, 1, 2);
+        grid->addWidget(m_visionProxyEnabledCheck, 4, 1, 1, 2);
 
-        addRowLabel(grid, 4, tr("代理类型"), card);
+        addRowLabel(grid, 5, tr("代理类型"), card);
         m_visionProxyTypeCombo = new SettingsComboBox(card);
         m_visionProxyTypeCombo->addItems({ QStringLiteral("HTTP"), QStringLiteral("SOCKS5") });
         if (m_visionViewModel) m_visionProxyTypeCombo->setCurrentIndex(m_visionViewModel->proxyType());
         connect(m_visionProxyTypeCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
             if (m_visionViewModel) m_visionViewModel->setProxyType(index);
         });
-        grid->addWidget(m_visionProxyTypeCombo, 4, 1, 1, 2);
+        grid->addWidget(m_visionProxyTypeCombo, 5, 1, 1, 2);
 
-        addRowLabel(grid, 5, tr("代理地址"), card);
+        addRowLabel(grid, 6, tr("代理地址"), card);
         m_visionProxyHostEdit = new QLineEdit(card);
         m_visionProxyHostEdit->setPlaceholderText(QStringLiteral("127.0.0.1"));
         if (m_visionViewModel) m_visionProxyHostEdit->setText(m_visionViewModel->proxyHost());
@@ -415,16 +426,16 @@ QWidget *SettingsDialog::buildGeneralPage()
                 m_visionViewModel->setProxyHost(m_visionProxyHostEdit->text().trimmed());
             }
         });
-        grid->addWidget(m_visionProxyHostEdit, 5, 1, 1, 2);
+        grid->addWidget(m_visionProxyHostEdit, 6, 1, 1, 2);
 
-        addRowLabel(grid, 6, tr("代理端口"), card);
+        addRowLabel(grid, 7, tr("代理端口"), card);
         m_visionProxyPortSpin = new QSpinBox(card);
         m_visionProxyPortSpin->setRange(1, 65535);
         if (m_visionViewModel) m_visionProxyPortSpin->setValue(m_visionViewModel->proxyPort());
         connect(m_visionProxyPortSpin, &QSpinBox::valueChanged, this, [this](int value) {
             if (m_visionViewModel) m_visionViewModel->setProxyPort(value);
         });
-        grid->addWidget(m_visionProxyPortSpin, 6, 1, 1, 2);
+        grid->addWidget(m_visionProxyPortSpin, 7, 1, 1, 2);
 
         const bool proxyEnabled = m_visionViewModel && m_visionViewModel->proxyEnabled();
         m_visionProxyTypeCombo->setEnabled(proxyEnabled);
@@ -547,14 +558,22 @@ void SettingsDialog::populateVisionModelOptions(int provider, const QString &cur
     }
 
     const QString normalizedCurrent = currentModel.trimmed();
+    const bool webSearchEnabled = m_visionViewModel && m_visionViewModel->webSearchEnabled();
     m_visionModelCombo->blockSignals(true);
     m_visionModelCombo->clear();
 
     if (provider == 1) {
-        m_visionModelCombo->addItems({ QStringLiteral("qwen-vl-plus"),
-                                       QStringLiteral("qwen-vl-max") });
+        if (webSearchEnabled) {
+            m_visionModelCombo->addItems({ QStringLiteral("qwen3-max-2026-01-23"),
+                                           QStringLiteral("qwen3.5-plus"),
+                                           QStringLiteral("qwen-plus") });
+        } else {
+            m_visionModelCombo->addItems({ QStringLiteral("qwen-vl-plus"),
+                                           QStringLiteral("qwen-vl-max") });
+        }
     } else {
-        m_visionModelCombo->addItem(QStringLiteral("doubao-vision-pro-32k-2410128"));
+        m_visionModelCombo->addItems({ QStringLiteral("doubao-seed-1-6-250615"),
+                                       QStringLiteral("doubao-vision-pro-32k-2410128") });
     }
 
     const QString finalModel = normalizedCurrent.isEmpty()

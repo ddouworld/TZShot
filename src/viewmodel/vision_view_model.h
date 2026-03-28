@@ -25,6 +25,7 @@ public:
     bool isLoading() const;
     int provider() const;
     QString model() const;
+    bool webSearchEnabled() const;
     bool proxyEnabled() const;
     int proxyType() const;
     QString proxyHost() const;
@@ -33,6 +34,7 @@ public:
     Q_INVOKABLE bool setApiKey(const QString &key);
     Q_INVOKABLE void setProvider(int provider);
     Q_INVOKABLE void setModel(const QString &model);
+    Q_INVOKABLE void setWebSearchEnabled(bool enabled);
     Q_INVOKABLE void setProxyEnabled(bool enabled);
     Q_INVOKABLE void setProxyType(int type);
     Q_INVOKABLE void setProxyHost(const QString &host);
@@ -42,7 +44,9 @@ public:
 signals:
     void apiKeyChanged(const QString &apiKey);
     void isLoadingChanged(bool loading);
+    void webSearchEnabledChanged(bool enabled);
     void analysisStarted(const QString &imageUrl, const QString &prompt, const QImage &image);
+    void analysisDelta(const QString &imageUrl, const QString &prompt, const QString &delta);
     void analysisSucceeded(const QString &imageUrl,
                            const QString &prompt,
                            const QString &result,
