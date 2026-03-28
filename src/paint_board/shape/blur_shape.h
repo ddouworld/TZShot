@@ -3,6 +3,7 @@
 
 #include "shape.h"
 #include <QImage>
+#include <QRect>
 #include <QVector>
 
 class BlurShape : public Shape
@@ -17,11 +18,18 @@ public:
     void setCanvasSnapshot(const QImage& snapshot);
 
 private:
+    struct BlurPatch {
+        QPoint center;
+        QRect  rect;
+        QImage image;
+    };
+
+    void applyBlurAt(const QPoint &center);
     QImage makeBlurredImage(const QImage& source) const;
 
     QVector<QPoint> m_points;
     QImage m_canvasSnapshot;
-    QImage m_blurredSnapshot;
+    QVector<BlurPatch> m_patches;
     int m_brushRadius;
     int m_blurRadius;
 };

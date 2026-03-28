@@ -22,6 +22,7 @@ class StickyViewModel;
 class StorageViewModel;
 class OcrViewModel;
 class GifRecordViewModel;
+class GifRecordOverlayWidget;
 class MagnifierWidget;
 class WidgetWindowBridge;
 class StickyCanvasWidget;
@@ -75,10 +76,6 @@ private:
     void updateToolOptionsPanel();
     QToolButton *currentActiveToolButton() const;
     void updateToolbarGeometry();
-    void updateGifBarGeometry();
-    void updateGifStatusText();
-    void updateGifBarState();
-    void updateGifDotState();
     void updateMagnifier(const QPoint &localPos);
     void updateToolOptionsGeometry();
     QRect toolOptionsRect() const;
@@ -100,7 +97,6 @@ private:
     CaptureAction m_defaultAction = CaptureAction::Copy;
     SelectionMaskController m_selection;
     bool m_gifRecordingMode = false;
-    QRect m_gifCaptureRect;
     QRect m_gifGlobalCaptureRect;
 
     QWidget *m_toolbar = nullptr;
@@ -142,16 +138,7 @@ private:
     int m_numberValue = 1;
     QPoint m_pendingTextPoint;
 
-    QWidget *m_gifBar = nullptr;
-    QWidget *m_gifBorderOverlay = nullptr;
-    QLabel *m_gifDot = nullptr;
-    QLabel *m_gifStatusLabel = nullptr;
-    QLabel *m_gifFrameLabel = nullptr;
-    QProgressBar *m_gifProgressBar = nullptr;
-    QToolButton *m_gifStopButton = nullptr;
-    QToolButton *m_gifCancelButton = nullptr;
-    QTimer *m_gifBlinkTimer = nullptr;
-    bool m_gifDotVisible = true;
+    GifRecordOverlayWidget *m_gifOverlay = nullptr;
     MagnifierWidget *m_magnifier = nullptr;
     QWidget *m_tipBubble = nullptr;
     QLabel *m_tipLabel = nullptr;

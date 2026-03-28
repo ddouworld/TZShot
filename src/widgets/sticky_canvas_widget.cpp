@@ -121,20 +121,27 @@ void StickyCanvasWidget::addTextAnnotation(const QPoint &point, const QString &t
 
 QImage StickyCanvasWidget::compositedImage() const
 {
-    if (size().isEmpty()) {
+    return compositedImage(rect());
+}
+
+QImage StickyCanvasWidget::compositedImage(const QRect &displayRect) const
+{
+    const QRect targetRect = displayRect.normalized().intersected(rect());
+    if (targetRect.isEmpty()) {
         return {};
     }
 
-    QImage image(size(), QImage::Format_ARGB32_Premultiplied);
+    QImage image(targetRect.size(), QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
 
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.translate(-targetRect.topLeft());
 
     if (!m_backgroundImage.isNull()) {
-        painter.drawImage(QRect(QPoint(0, 0), size()), m_backgroundImage);
+        painter.drawImage(rect(), m_backgroundImage);
     } else {
-        painter.fillRect(image.rect(), Qt::white);
+        painter.fillRect(targetRect, Qt::white);
     }
 
     painter.save();

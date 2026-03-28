@@ -17,22 +17,23 @@ void BlurShape::setEndPoint(const QPoint &point)
         return;
     }
     m_points.append(point);
+    applyBlurAt(point);
 }
 
 void BlurShape::draw(QPainter *painter)
 {
-    if (!painter || m_blurredSnapshot.isNull() || m_points.isEmpty()) {
+    if (!painter || m_patches.isEmpty()) {
         return;
     }
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
-    for (const QPoint &point : m_points) {
+    for (const BlurPatch &patch : m_patches) {
         QPainterPath path;
-        path.addEllipse(QPointF(point), m_brushRadius, m_brushRadius);
+        path.addEllipse(QPointF(patch.center), m_brushRadius, m_brushRadius);
         painter->save();
         painter->setClipPath(path);
-        painter->drawImage(QPoint(0, 0), m_blurredSnapshot);
+        painter->drawImage(patch.rect.topLeft(), patch.image);
         painter->restore();
     }
     painter->restore();
@@ -44,7 +45,44 @@ void BlurShape::setCanvasSnapshot(const QImage &snapshot)
         return;
     }
     m_canvasSnapshot = snapshot.convertToFormat(QImage::Format_ARGB32);
-    m_blurredSnapshot = makeBlurredImage(m_canvasSnapshot);
+    m_patches.clear();
+    for (const QPoint &point : m_points) {
+        applyBlurAt(point);
+    }
+}
+
+void BlurShape::applyBlurAt(const QPoint &center)
+{
+    if (m_canvasSnapshot.isNull()) {
+        return;
+    }
+
+    if (!m_patches.isEmpty()) {
+        const QPoint delta = m_patches.constLast().center - center;
+        const int minDistance = qMax(2, m_brushRadius / 3);
+        if ((delta.x() * delta.x() + delta.y() * delta.y()) < (minDistance * minDistance)) {
+            return;
+        }
+    }
+
+    const int patchRadius = m_brushRadius + m_blurRadius * 2;
+    QRect patchRect(center.x() - patchRadius,
+                    center.y() - patchRadius,
+                    patchRadius * 2 + 1,
+                    patchRadius * 2 + 1);
+    patchRect = patchRect.intersected(m_canvasSnapshot.rect());
+    if (patchRect.isEmpty()) {
+        return;
+    }
+
+    BlurPatch patch;
+    patch.center = center;
+    patch.rect = patchRect;
+    patch.image = makeBlurredImage(m_canvasSnapshot.copy(patchRect));
+    if (patch.image.isNull()) {
+        return;
+    }
+    m_patches.append(patch);
 }
 
 QImage BlurShape::makeBlurredImage(const QImage &source) const

@@ -58,6 +58,8 @@ set(SOURCES
     src/widgets/sticky_canvas_widget.h
     src/widgets/capture_overlay_widget.cpp
     src/widgets/capture_overlay_widget.h
+    src/widgets/gif_record_overlay_widget.cpp
+    src/widgets/gif_record_overlay_widget.h
     src/widgets/long_capture_controller.cpp
     src/widgets/long_capture_controller.h
     src/widgets/magnifier_widget.cpp

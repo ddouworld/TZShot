@@ -247,17 +247,12 @@ QImage ScreenshotViewModel::captureScreen(StickyCanvasWidget *paintBoard,
     }
 
     if (paintBoard) {
-        const QImage composited = paintBoard->compositedImage();
+        const QRect localRect = rect.translated(-m_snapshot.virtualGeometry().topLeft());
+        const QImage composited = rect.isEmpty()
+            ? paintBoard->compositedImage()
+            : paintBoard->compositedImage(localRect);
         if (!composited.isNull()) {
-            if (!rect.isEmpty()) {
-                const QRect localRect = rect.translated(-m_snapshot.virtualGeometry().topLeft())
-                                             .intersected(composited.rect());
-                if (!localRect.isEmpty()) {
-                    screenshot = composited.copy(localRect);
-                }
-            } else {
-                screenshot = composited;
-            }
+            screenshot = composited;
         }
 
         if (setBackground) {

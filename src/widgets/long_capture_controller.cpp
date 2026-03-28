@@ -244,6 +244,8 @@ void LongCaptureController::ensureWidgets()
     if (!m_previewWidget) {
         m_previewWidget = new QWidget(nullptr);
         m_previewWidget->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::WindowStaysOnTopHint | Qt::WindowDoesNotAcceptFocus);
+        m_previewWidget->setAttribute(Qt::WA_TranslucentBackground, true);
+        m_previewWidget->setAttribute(Qt::WA_StyledBackground, true);
         m_previewWidget->setAttribute(Qt::WA_ShowWithoutActivating, true);
         m_previewWidget->installEventFilter(this);
         m_previewWidget->setObjectName(QStringLiteral("longCapturePreview"));
@@ -323,13 +325,36 @@ void LongCaptureController::updateWidgetGeometry()
 
     if (m_previewWidget) {
         const QSize size = m_previewWidget->size();
-        const int x = qMax(workArea.left(), workArea.right() - size.width() - 26);
-        const int y = qMax(workArea.top() + 20, workArea.center().y() - size.height() / 2);
+        constexpr int kPreviewGap = 14;
+        const int rightX = m_captureRect.right() + 1 + kPreviewGap;
+        const int leftX = m_captureRect.left() - size.width() - kPreviewGap;
+
+        int x = 0;
+        if (rightX + size.width() <= workArea.right() + 1) {
+            x = rightX;
+        } else if (leftX >= workArea.left()) {
+            x = leftX;
+        } else {
+            const int rightSpace = workArea.right() - m_captureRect.right();
+            const int leftSpace = m_captureRect.left() - workArea.left();
+            if (rightSpace >= leftSpace) {
+                x = qMax(workArea.left(), workArea.right() - size.width() + 1);
+            } else {
+                x = workArea.left();
+            }
+        }
+
+        const int maxY = qMax(workArea.top(), workArea.bottom() - size.height() + 1);
+        const int y = qBound(workArea.top(),
+                             m_captureRect.top(),
+                             maxY);
         placeTopMost(m_previewWidget, QRect(x, y, size.width(), size.height()));
     }
 
     if (m_frameWidget) {
-        const QRect frameRect = m_captureRect.adjusted(-2, -2, 2, 2);
+        // Keep the decorative frame fully outside the sampled area so
+        // its corner markers never leak into the captured image.
+        const QRect frameRect = m_captureRect.adjusted(-6, -6, 6, 6);
         placeTopMost(m_frameWidget, frameRect);
     }
 }

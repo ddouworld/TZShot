@@ -173,6 +173,11 @@ void GifRecordViewModel::startEncoding()
 
     qDebug() << "[GifRecord] 开始编码 →" << m_pendingSavePath;
 
+    // 把原始帧所有权移交给编码线程，避免主线程上再保留一份全量副本。
+    QVector<QImage> sourceFrames = std::move(m_frames);
+    m_frames.clear();
+    emit frameCountChanged();
+
     // 根据质量预设做抽帧/缩放，平衡体积与清晰度。
     const int preset = m_settings.gifQualityPreset();
     int frameStep = 1;
@@ -188,24 +193,28 @@ void GifRecordViewModel::startEncoding()
         encodeFps = 10;
     }
 
-    QVector<QImage> framesToEncode;
-    framesToEncode.reserve((m_frames.size() + frameStep - 1) / frameStep);
-    for (int i = 0; i < m_frames.size(); i += frameStep) {
-        QImage frame = m_frames[i];
-        if (scale < 0.999) {
-            const int dstW = qMax(2, int(frame.width() * scale));
-            const int dstH = qMax(2, int(frame.height() * scale));
-            frame = frame.scaled(dstW, dstH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        }
-        framesToEncode.append(frame);
-    }
-    if (framesToEncode.isEmpty() && !m_frames.isEmpty()) {
-        framesToEncode.append(m_frames.first());
-    }
-
     QString savePath = m_pendingSavePath;
 
-    QFuture<bool> future = QtConcurrent::run([framesToEncode, savePath, encodeFps]() -> bool {
+    QFuture<bool> future = QtConcurrent::run([sourceFrames = std::move(sourceFrames),
+                                              savePath,
+                                              encodeFps,
+                                              frameStep,
+                                              scale]() mutable -> bool {
+        QVector<QImage> framesToEncode;
+        framesToEncode.reserve((sourceFrames.size() + frameStep - 1) / frameStep);
+        for (int i = 0; i < sourceFrames.size(); i += frameStep) {
+            QImage frame = sourceFrames[i];
+            if (scale < 0.999) {
+                const int dstW = qMax(2, int(frame.width() * scale));
+                const int dstH = qMax(2, int(frame.height() * scale));
+                frame = frame.scaled(dstW, dstH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            }
+            framesToEncode.append(std::move(frame));
+        }
+        if (framesToEncode.isEmpty() && !sourceFrames.isEmpty()) {
+            framesToEncode.append(sourceFrames.first());
+        }
+
         GifEncoder encoder;
         bool ok = encoder.encode(framesToEncode, savePath, encodeFps, true);
         if (!ok) {

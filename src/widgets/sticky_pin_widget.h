@@ -17,6 +17,7 @@ class QCheckBox;
 class QLabel;
 class QLineEdit;
 class QSpinBox;
+class QTimer;
 class QToolButton;
 class StickyCanvasWidget;
 class VisionResultWidget;
@@ -51,6 +52,8 @@ private:
     void setZoomFactor(qreal value);
     void openAiEditor();
     void openVisionWindow();
+    void setAiLoading(bool loading);
+    void updateAiLoadingIcon();
     void applyAiImage(const QString &oldImageUrl, const QString &newImageUrl);
     void releaseStoredImage();
     bool saveCurrentImage();
@@ -116,7 +119,10 @@ private:
     int m_numberValue = 1;
     bool m_toolbarVisible = true;
     bool m_shadowVisible = true;
+    bool m_aiLoading = false;
+    int m_aiLoadingFrame = 0;
     qreal m_zoomFactor = 1.0;
+    QTimer *m_aiLoadingTimer = nullptr;
     bool m_released = false;
 };
 

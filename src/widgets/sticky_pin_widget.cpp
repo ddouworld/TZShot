@@ -306,7 +306,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
                 this, &StickyPinWidget::applyAiImage);
         connect(m_aiViewModel, &AIViewModel::signalRequestFailed, this,
                 [this](const QString &errorMsg) {
-            setAiLoading(false);
+            this->setAiLoading(false);
             QMessageBox::warning(this, tr("AI 编辑失败"), errorMsg);
         });
         connect(m_aiViewModel, &AIViewModel::isLoadingChanged,

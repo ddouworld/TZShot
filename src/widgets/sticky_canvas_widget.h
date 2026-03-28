@@ -33,6 +33,7 @@ public:
     Shapeype activeShapeType() const { return m_shapeType; }
     bool hasAnnotations() const { return !m_shapes.isEmpty(); }
     QImage compositedImage() const;
+    QImage compositedImage(const QRect &displayRect) const;
     void addTextAnnotation(const QPoint &point, const QString &text);
     void undo();
     void reset();
