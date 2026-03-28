@@ -2,6 +2,20 @@
 
 [中文](#中文) | [English](#english)
 
+## Screenshots / 功能截图
+
+| 标注贴图 | AI 图像编辑 |
+| --- | --- |
+| ![Sticky Annotate](docs/images/sticky-annotate.png) | ![AI Edit](docs/images/ai-edit.png) |
+
+| AI 视觉理解 | 长截图 |
+| --- | --- |
+| ![AI Vision](docs/images/ai-vision.png) | ![Long Capture](docs/images/long-capture.png) |
+
+| OCR 结果 | GIF 录制 |
+| --- | --- |
+| ![OCR Result](docs/images/ocr-result.png) | ![GIF Record](docs/images/gif-record.png) |
+
 ---
 
 ## 中文
@@ -44,7 +58,7 @@
 - 全局快捷键（可配置并持久化）
 - 系统托盘菜单
 - 中英文切换（切换后自动重启应用）
-- AI 图像编辑（可配置模型与 API Key）
+- AI 图像编辑与视觉理解（可配置服务商、模型与 API Key）
 
 ### 技术栈
 - C++17
@@ -144,6 +158,14 @@ cmake --build build --config Release
 - AI
   - `AI/apiKey`
   - `AI/selectedModel`
+- Vision
+  - `Vision/apiKey`
+  - `Vision/provider`
+  - `Vision/model`
+  - `Vision/proxyEnabled`
+  - `Vision/proxyType`
+  - `Vision/proxyHost`
+  - `Vision/proxyPort`
 - 快捷键
   - `Shortcuts/screenshot`
   - `Shortcuts/screenshotSave`
@@ -206,7 +228,7 @@ It supports multi-screen capture, region annotations, sticky image editing, long
 - Configurable global shortcuts (persisted)
 - System tray menu
 - Chinese/English UI switching (app restarts after switching)
-- AI image editing with configurable model/API key
+- AI image editing and visual understanding with configurable provider, model, and API key
 
 ### Tech Stack
 - C++17
@@ -306,6 +328,14 @@ Run on Linux (path may vary by generator):
 - AI
   - `AI/apiKey`
   - `AI/selectedModel`
+- Vision
+  - `Vision/apiKey`
+  - `Vision/provider`
+  - `Vision/model`
+  - `Vision/proxyEnabled`
+  - `Vision/proxyType`
+  - `Vision/proxyHost`
+  - `Vision/proxyPort`
 - Shortcuts
   - `Shortcuts/screenshot`
   - `Shortcuts/screenshotSave`
