@@ -248,6 +248,8 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
     , m_aiViewModel(aiViewModel)
     , m_visionViewModel(visionViewModel)
 {
+    m_annotationText = tr("文本");
+
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::WindowStaysOnTopHint);
@@ -346,14 +348,14 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
         m_colorButtons.append(button);
     }
 
-    struct SizePreset { int value; const char *label; };
+    struct SizePreset { int value; QString label; };
     const QVector<SizePreset> sizePresets {
-        { 2, "细" }, { 4, "中" }, { 6, "粗" }, { 10, "特粗" }
+        { 2, tr("细") }, { 4, tr("中") }, { 6, tr("粗") }, { 10, tr("特粗") }
     };
     for (const SizePreset &preset : sizePresets) {
         auto *button = new QToolButton(m_toolOptions);
         button->setCheckable(true);
-        button->setText(QString::fromUtf8(preset.label));
+        button->setText(preset.label);
         button->setCursor(Qt::PointingHandCursor);
         connect(button, &QToolButton::clicked, this, [this, button, preset]() {
             for (QToolButton *other : m_sizeButtons) {

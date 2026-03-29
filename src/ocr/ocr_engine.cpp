@@ -209,9 +209,13 @@ OcrEngine::OcrEngine()
 
     if (!initOk) {
         if (tessdataDirs.isEmpty()) {
-            m_lastError = QStringLiteral("Tesseract Init 失败（chi_sim+eng）：未找到可用 tessdata");
+            m_lastError = QCoreApplication::translate(
+                "OcrEngine",
+                "Tesseract Init 失败（chi_sim+eng）：未找到可用 tessdata");
         } else {
-            m_lastError = QStringLiteral("Tesseract Init 失败（chi_sim+eng），候选目录=%1")
+            m_lastError = QCoreApplication::translate(
+                "OcrEngine",
+                "Tesseract Init 失败（chi_sim+eng），候选目录=%1")
                               .arg(tessdataDirs.join(QStringLiteral("; ")));
         }
         qWarning() << "[OcrEngine]" << m_lastError;
@@ -227,7 +231,9 @@ OcrEngine::OcrEngine()
 #else
     m_tesseractProgram = resolveTesseractProgram();
     if (m_tesseractProgram.isEmpty()) {
-        m_lastError = QStringLiteral("OCR 未启用：未找到 tesseract 可执行文件。请安装 Tesseract，或设置 TESSERACT_PATH 指向可执行文件");
+        m_lastError = QCoreApplication::translate(
+            "OcrEngine",
+            "OCR 未启用：未找到 tesseract 可执行文件。请安装 Tesseract，或设置 TESSERACT_PATH 指向可执行文件");
         m_ready = false;
         return;
     }
@@ -259,18 +265,18 @@ QString OcrEngine::recognize(const QImage &image)
 {
 #ifdef ENABLE_OCR
     if (!m_ready || !m_api) {
-        m_lastError = QStringLiteral("OCR 引擎未就绪");
+        m_lastError = QCoreApplication::translate("OcrEngine", "OCR 引擎未就绪");
         return {};
     }
 
     if (image.isNull()) {
-        m_lastError = QStringLiteral("输入图像为空");
+        m_lastError = QCoreApplication::translate("OcrEngine", "输入图像为空");
         return {};
     }
 
     QImage rgb = image.convertToFormat(QImage::Format_RGB888);
     if (rgb.width() < 2 || rgb.height() < 2) {
-        m_lastError = QStringLiteral("输入图像尺寸过小");
+        m_lastError = QCoreApplication::translate("OcrEngine", "输入图像尺寸过小");
         return {};
     }
 
@@ -293,7 +299,7 @@ QString OcrEngine::recognize(const QImage &image)
 
     char *rawText = m_api->GetUTF8Text();
     if (!rawText) {
-        m_lastError = QStringLiteral("Tesseract GetUTF8Text 返回 null");
+        m_lastError = QCoreApplication::translate("OcrEngine", "Tesseract GetUTF8Text 返回 null");
         return {};
     }
 
@@ -306,25 +312,27 @@ QString OcrEngine::recognize(const QImage &image)
 #else
     if (!m_ready || m_tesseractProgram.isEmpty()) {
         if (m_lastError.isEmpty()) {
-            m_lastError = QStringLiteral("OCR 未就绪：未找到 tesseract 可执行文件");
+            m_lastError = QCoreApplication::translate(
+                "OcrEngine",
+                "OCR 未就绪：未找到 tesseract 可执行文件");
         }
         return {};
     }
 
     if (image.isNull()) {
-        m_lastError = QStringLiteral("输入图像为空");
+        m_lastError = QCoreApplication::translate("OcrEngine", "输入图像为空");
         return {};
     }
 
     QTemporaryDir tempDir;
     if (!tempDir.isValid()) {
-        m_lastError = QStringLiteral("OCR 临时目录创建失败");
+        m_lastError = QCoreApplication::translate("OcrEngine", "OCR 临时目录创建失败");
         return {};
     }
 
     const QString inputPath = tempDir.path() + QStringLiteral("/ocr_input.png");
     if (!image.save(inputPath, "PNG")) {
-        m_lastError = QStringLiteral("OCR 临时图片保存失败");
+        m_lastError = QCoreApplication::translate("OcrEngine", "OCR 临时图片保存失败");
         return {};
     }
 
@@ -337,13 +345,13 @@ QString OcrEngine::recognize(const QImage &image)
     QProcess process;
     process.start(m_tesseractProgram, args);
     if (!process.waitForStarted(5000)) {
-        m_lastError = QStringLiteral("OCR 启动失败：无法启动 tesseract 进程");
+        m_lastError = QCoreApplication::translate("OcrEngine", "OCR 启动失败：无法启动 tesseract 进程");
         return {};
     }
 
     if (!process.waitForFinished(30000)) {
         process.kill();
-        m_lastError = QStringLiteral("OCR 超时：tesseract 执行超过 30 秒");
+        m_lastError = QCoreApplication::translate("OcrEngine", "OCR 超时：tesseract 执行超过 30 秒");
         return {};
     }
 
@@ -353,8 +361,8 @@ QString OcrEngine::recognize(const QImage &image)
     if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
         const QString errText = QString::fromLocal8Bit(stdErr).trimmed();
         m_lastError = errText.isEmpty()
-            ? QStringLiteral("OCR 失败：tesseract 返回非零退出码")
-            : QStringLiteral("OCR 失败：%1").arg(errText);
+            ? QCoreApplication::translate("OcrEngine", "OCR 失败：tesseract 返回非零退出码")
+            : QCoreApplication::translate("OcrEngine", "OCR 失败：%1").arg(errText);
         return {};
     }
 
@@ -362,8 +370,8 @@ QString OcrEngine::recognize(const QImage &image)
     if (result.isEmpty()) {
         const QString errText = QString::fromLocal8Bit(stdErr).trimmed();
         m_lastError = errText.isEmpty()
-            ? QStringLiteral("OCR 未识别到文本")
-            : QStringLiteral("OCR 未识别到文本：%1").arg(errText);
+            ? QCoreApplication::translate("OcrEngine", "OCR 未识别到文本")
+            : QCoreApplication::translate("OcrEngine", "OCR 未识别到文本：%1").arg(errText);
         return {};
     }
 

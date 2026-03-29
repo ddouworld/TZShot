@@ -64,10 +64,10 @@ VisionViewModel::VisionViewModel(AppSettings &settings,
             [this](AIErrorType errorType, const QString &errorMsg) {
         QString prefix;
         switch (errorType) {
-        case AIErrorType::NetworkError: prefix = QStringLiteral("网络错误："); break;
-        case AIErrorType::ApiError: prefix = QStringLiteral("API 错误："); break;
-        case AIErrorType::TimeoutError: prefix = QStringLiteral("超时错误："); break;
-        case AIErrorType::ParamError: prefix = QStringLiteral("参数错误："); break;
+        case AIErrorType::NetworkError: prefix = VisionViewModel::tr("网络错误："); break;
+        case AIErrorType::ApiError: prefix = VisionViewModel::tr("API 错误："); break;
+        case AIErrorType::TimeoutError: prefix = VisionViewModel::tr("超时错误："); break;
+        case AIErrorType::ParamError: prefix = VisionViewModel::tr("参数错误："); break;
         default: break;
         }
         setLoading(false);
@@ -209,24 +209,24 @@ void VisionViewModel::setProxyPort(int port)
 void VisionViewModel::analyzeStickyImage(const QString &prompt, const QString &imageUrl)
 {
     if (m_loading) {
-        emit analysisFailed(imageUrl, prompt, QStringLiteral("已有视觉分析任务正在进行中"));
+        emit analysisFailed(imageUrl, prompt, tr("已有视觉分析任务正在进行中"));
         return;
     }
     if (prompt.trimmed().isEmpty()) {
-        emit analysisFailed(imageUrl, prompt, QStringLiteral("提示词不能为空"));
+        emit analysisFailed(imageUrl, prompt, tr("提示词不能为空"));
         return;
     }
 
     const QImage originalImage = m_store.getImageByUrl(imageUrl);
     if (originalImage.isNull()) {
-        emit analysisFailed(imageUrl, prompt, QStringLiteral("读取图片失败"));
+        emit analysisFailed(imageUrl, prompt, tr("读取图片失败"));
         return;
     }
 
     const QImage normalizedImage = normalizeImage(originalImage);
     const QString imageDataUrl = imageToDataUrl(normalizedImage);
     if (imageDataUrl.isEmpty()) {
-        emit analysisFailed(imageUrl, prompt, QStringLiteral("图片编码失败"));
+        emit analysisFailed(imageUrl, prompt, tr("图片编码失败"));
         return;
     }
 
@@ -243,7 +243,7 @@ void VisionViewModel::analyzeStickyImage(const QString &prompt, const QString &i
         setLoading(false);
         emit analysisFailed(m_pendingImageUrl,
                             m_pendingPrompt,
-                            QStringLiteral("请求发起失败：") + m_call->lastErrorString());
+                            tr("请求发起失败：") + m_call->lastErrorString());
     }
 }
 

@@ -1,5 +1,6 @@
 #include "widgets/selection_mask_controller.h"
 
+#include <QCoreApplication>
 #include <QPainter>
 #include <QPainterPath>
 
@@ -177,7 +178,8 @@ void SelectionMaskController::paint(QPainter &painter, const QRect &canvasRect) 
     painter.setPen(QPen(QColor(37, 99, 235, 235), activeMode == DragMode::Moving ? 1.6 : 1.2));
     painter.drawRect(selection);
 
-    const QString text = QStringLiteral("X:%1  Y:%2  宽:%3  高:%4")
+    const QString text = QCoreApplication::translate("SelectionMaskController",
+                                                     "X:%1  Y:%2  宽:%3  高:%4")
                              .arg(selection.x()).arg(selection.y())
                              .arg(selection.width()).arg(selection.height());
     QFont font = painter.font();

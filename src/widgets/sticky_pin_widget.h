@@ -112,7 +112,7 @@ private:
     QToolButton *m_closeButton = nullptr;
     QColor m_currentPenColor = QColor("#F43F5E");
     int m_currentPenSize = 6;
-    QString m_annotationText = QStringLiteral("文本");
+    QString m_annotationText;
     QPoint m_pendingTextPoint;
     bool m_textBackgroundEnabled = true;
     bool m_numberAutoIncrement = true;

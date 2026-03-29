@@ -83,10 +83,10 @@ void AICallBase::onReplyFinished(QNetworkReply *reply)
     try {
         result = parseResponse(responseData);
     } catch (const std::exception &e) {
-        setError(AIErrorType::ApiError, QString("响应解析失败：%1").arg(e.what()));
+        setError(AIErrorType::ApiError, tr("响应解析失败：%1").arg(e.what()));
         return;
     } catch (...) {
-        setError(AIErrorType::ApiError, "响应解析失败：未知错误");
+        setError(AIErrorType::ApiError, tr("响应解析失败：未知错误"));
         return;
     }
 
@@ -108,5 +108,5 @@ void AICallBase::onRequestTimeout()
         m_currentReply = nullptr;
     }
 
-    setError(AIErrorType::TimeoutError, QString("请求超时（%1毫秒）").arg(m_timeout));
+    setError(AIErrorType::TimeoutError, tr("请求超时（%1毫秒）").arg(m_timeout));
 }

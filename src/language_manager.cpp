@@ -19,17 +19,26 @@ QString LanguageManager::language() const
 void LanguageManager::setLanguage(const QString &lang)
 {
     if (m_settings.language() == lang) return;
+    const QString previousLanguage = m_settings.language();
     m_settings.setLanguage(lang);
-    emit languageChanged(lang);
-    restartApp();
+
+    if (restartApp()) {
+        emit languageChanged(lang);
+        QCoreApplication::quit();
+        return;
+    }
+
+    m_settings.setLanguage(previousLanguage);
+    emit languageChanged(previousLanguage);
+    emit languageApplyFailed(tr("语言切换失败，请稍后重试。"));
+    qWarning() << "[LanguageManager] 重启应用失败，已回滚语言设置";
 }
 
-void LanguageManager::restartApp()
+bool LanguageManager::restartApp()
 {
-    // 用当前可执行文件路径和参数重新启动，然后退出当前进程
-    QProcess::startDetached(QCoreApplication::applicationFilePath(),
-                            QCoreApplication::arguments());
-    QCoreApplication::quit();
+    // 用当前可执行文件路径和参数重新启动当前进程
+    return QProcess::startDetached(QCoreApplication::applicationFilePath(),
+                                   QCoreApplication::arguments());
 }
 
 void LanguageManager::loadTranslator(const QString &lang)

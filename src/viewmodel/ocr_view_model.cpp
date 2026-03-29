@@ -26,7 +26,7 @@ void OcrViewModel::recognize(const QImage &image)
         return;
     }
     if (image.isNull()) {
-        emit recognizeFailed("输入图像为空");
+        emit recognizeFailed(tr("输入图像为空"));
         return;
     }
 

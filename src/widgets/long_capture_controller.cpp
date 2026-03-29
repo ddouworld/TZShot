@@ -200,7 +200,7 @@ void LongCaptureController::ensureWidgets()
         layout->setContentsMargins(10, 10, 10, 10);
         layout->setSpacing(10);
 
-        auto *badge = new QLabel(QStringLiteral("长"), m_barWidget);
+        auto *badge = new QLabel(tr("长"), m_barWidget);
         badge->setObjectName(QStringLiteral("longCaptureBadge"));
         badge->setAlignment(Qt::AlignCenter);
         badge->setFixedSize(26, 26);

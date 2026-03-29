@@ -14,12 +14,12 @@ bool QwenAICall::sendRequest(const QString &prompt, const QJsonObject &params)
 {
     // 参数校验
     if (m_apiKey.isEmpty()) {
-        setError(AIErrorType::ParamError, "API Key 不能为空");
+        setError(AIErrorType::ParamError, tr("API Key 不能为空"));
         return false;
     }
 
     if (prompt.isEmpty()) {
-        setError(AIErrorType::ParamError, "提示词不能为空");
+        setError(AIErrorType::ParamError, tr("提示词不能为空"));
         return false;
     }
 
@@ -105,7 +105,7 @@ QString QwenAICall::parseResponse(const QByteArray &responseData)
     }
 
     if (!doc.isObject()) {
-        throw std::runtime_error("响应不是有效的JSON对象");
+        throw std::runtime_error(tr("响应不是有效的JSON对象").toStdString());
     }
 
     QJsonObject rootObj = doc.object();
@@ -113,7 +113,7 @@ QString QwenAICall::parseResponse(const QByteArray &responseData)
     // 检查API错误
     if (rootObj.contains("error")) {
         QJsonObject errorObj = rootObj["error"].toObject();
-        QString errorMsg = errorObj["message"].toString("未知API错误");
+        QString errorMsg = errorObj["message"].toString(tr("未知API错误"));
         throw std::runtime_error(errorMsg.toStdString());
     }
 
@@ -121,7 +121,7 @@ QString QwenAICall::parseResponse(const QByteArray &responseData)
     QJsonObject data = rootObj["output"].toObject();
     QJsonArray choices = data["choices"].toArray();
     if (choices.isEmpty()) {
-        throw std::runtime_error("响应中无有效内容");
+        throw std::runtime_error(tr("响应中无有效内容").toStdString());
     }
 
     QJsonObject choiceObj = choices.first().toObject();
@@ -130,7 +130,7 @@ QString QwenAICall::parseResponse(const QByteArray &responseData)
     QJsonObject imgdata = content.first().toObject();
     QString img = imgdata["image"].toString();
     if (img.isEmpty()) {
-        throw std::runtime_error("响应内容为空");
+        throw std::runtime_error(tr("响应内容为空").toStdString());
     }
 
     return img;

@@ -22,6 +22,7 @@
 #include <QPushButton>
 #include <QScreen>
 #include <QScrollArea>
+#include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStyle>
 #include <QTextEdit>
@@ -453,13 +454,25 @@ QWidget *SettingsDialog::buildGeneralPage()
         grid->setHorizontalSpacing(12);
         addRowLabel(grid, 0, tr("界面语言"), card);
         m_languageCombo = new SettingsComboBox(card);
-        m_languageCombo->addItems({ QStringLiteral("中文"), QStringLiteral("English") });
+        m_languageCombo->addItems({ tr("中文"), tr("English") });
         if (m_languageManager) m_languageCombo->setCurrentIndex(m_languageManager->language() == QStringLiteral("en") ? 1 : 0);
         connect(m_languageCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
             if (m_languageManager) {
                 m_languageManager->setLanguage(index == 1 ? QStringLiteral("en") : QStringLiteral("zh_CN"));
             }
         });
+        if (m_languageManager) {
+            connect(m_languageManager, &LanguageManager::languageChanged, this, [this](const QString &lang) {
+                if (!m_languageCombo) {
+                    return;
+                }
+                const QSignalBlocker blocker(m_languageCombo);
+                m_languageCombo->setCurrentIndex(lang == QStringLiteral("en") ? 1 : 0);
+            });
+            connect(m_languageManager, &LanguageManager::languageApplyFailed, this, [this](const QString &message) {
+                QMessageBox::warning(this, tr("语言切换失败"), message);
+            });
+        }
         grid->addWidget(m_languageCombo, 0, 1);
         outer->addWidget(card);
     }

@@ -38,11 +38,11 @@ void SeedreamAiCall::setApiUrl(const QString &url)
 bool SeedreamAiCall::sendRequest(const QString &prompt, const QJsonObject &params)
 {
     if (m_apiKey.isEmpty()) {
-        setError(AIErrorType::ParamError, "API Key 不能为空");
+        setError(AIErrorType::ParamError, tr("API Key 不能为空"));
         return false;
     }
     if (prompt.isEmpty()) {
-        setError(AIErrorType::ParamError, "提示词不能为空");
+        setError(AIErrorType::ParamError, tr("提示词不能为空"));
         return false;
     }
 
@@ -147,7 +147,7 @@ QString SeedreamAiCall::parseResponse(const QByteArray &responseData)
         throw std::runtime_error(parseError.errorString().toStdString());
 
     if (!doc.isObject())
-        throw std::runtime_error("响应不是有效的 JSON 对象");
+        throw std::runtime_error(tr("响应不是有效的 JSON 对象").toStdString());
 
     QJsonObject root = doc.object();
 
@@ -155,20 +155,19 @@ QString SeedreamAiCall::parseResponse(const QByteArray &responseData)
     if (root.contains("error")) {
         QJsonObject err = root["error"].toObject();
         QString code    = err["code"].toString();
-        QString msg     = err["message"].toString("未知 API 错误");
+        QString msg     = err["message"].toString(tr("未知 API 错误"));
         throw std::runtime_error(
             QStringLiteral("[%1] %2").arg(code, msg).toStdString());
     }
 
     QJsonArray data = root["data"].toArray();
     if (data.isEmpty())
-        throw std::runtime_error("响应中 data 数组为空");
+        throw std::runtime_error(tr("响应中 data 数组为空").toStdString());
 
     QString url = data.first().toObject()["url"].toString();
     if (url.isEmpty())
-        throw std::runtime_error("响应中 url 字段为空");
+        throw std::runtime_error(tr("响应中 url 字段为空").toStdString());
 
     qDebug() << "[SeedreamAiCall] 生成图片 URL：" << url;
     return url;
 }
-

@@ -20,7 +20,7 @@ QString parseChoicesText(const QJsonObject &rootObj)
 {
     const QJsonArray choices = rootObj.value(QStringLiteral("choices")).toArray();
     if (choices.isEmpty()) {
-        throw std::runtime_error("响应中无有效内容");
+        throw std::runtime_error(QObject::tr("响应中无有效内容").toStdString());
     }
 
     const QJsonObject messageObj = choices.first().toObject().value(QStringLiteral("message")).toObject();
@@ -49,7 +49,7 @@ QString parseChoicesText(const QJsonObject &rootObj)
         }
     }
 
-    throw std::runtime_error("响应内容为空");
+    throw std::runtime_error(QObject::tr("响应内容为空").toStdString());
 }
 
 QString parseResponsesText(const QJsonObject &rootObj)
@@ -81,7 +81,7 @@ QString parseResponsesText(const QJsonObject &rootObj)
         return parts.join(QLatin1Char('\n'));
     }
 
-    throw std::runtime_error("响应内容为空");
+    throw std::runtime_error(QObject::tr("响应内容为空").toStdString());
 }
 }
 
@@ -94,16 +94,16 @@ DoubaoVisionCall::DoubaoVisionCall(const QString &apiKey, QObject *parent)
 bool DoubaoVisionCall::sendRequest(const QString &prompt, const QJsonObject &params)
 {
     if (m_apiKey.isEmpty()) {
-        setError(AIErrorType::ParamError, QStringLiteral("视觉 API Key 不能为空"));
+        setError(AIErrorType::ParamError, tr("视觉 API Key 不能为空"));
         return false;
     }
     if (prompt.trimmed().isEmpty()) {
-        setError(AIErrorType::ParamError, QStringLiteral("提示词不能为空"));
+        setError(AIErrorType::ParamError, tr("提示词不能为空"));
         return false;
     }
     if (!params.contains(QStringLiteral("image_url"))
         || params.value(QStringLiteral("image_url")).toString().isEmpty()) {
-        setError(AIErrorType::ParamError, QStringLiteral("缺少图片数据"));
+        setError(AIErrorType::ParamError, tr("缺少图片数据"));
         return false;
     }
 
@@ -272,14 +272,14 @@ QString DoubaoVisionCall::parseResponse(const QByteArray &responseData)
         throw std::runtime_error(parseError.errorString().toStdString());
     }
     if (!doc.isObject()) {
-        throw std::runtime_error("响应不是有效的JSON对象");
+        throw std::runtime_error(tr("响应不是有效的JSON对象").toStdString());
     }
 
     const QJsonObject rootObj = doc.object();
     if (rootObj.contains(QStringLiteral("error"))) {
         const QJsonObject errorObj = rootObj.value(QStringLiteral("error")).toObject();
         throw std::runtime_error(errorObj.value(QStringLiteral("message"))
-                                     .toString(QStringLiteral("未知 API 错误"))
+                                     .toString(tr("未知 API 错误"))
                                      .toStdString());
     }
 
@@ -291,7 +291,7 @@ QString DoubaoVisionCall::parseResponse(const QByteArray &responseData)
         return parseResponsesText(rootObj);
     }
 
-    throw std::runtime_error("响应内容为空");
+    throw std::runtime_error(tr("响应内容为空").toStdString());
 }
 
 void DoubaoVisionCall::onReplyFinished(QNetworkReply *reply)
@@ -340,7 +340,7 @@ void DoubaoVisionCall::onReplyFinished(QNetworkReply *reply)
     }
 
     if (result.trimmed().isEmpty()) {
-        setError(AIErrorType::ApiError, QStringLiteral("响应内容为空"));
+        setError(AIErrorType::ApiError, tr("响应内容为空"));
         return;
     }
 
@@ -448,18 +448,18 @@ void DoubaoVisionCall::processStreamEvent(const QByteArray &eventBlock)
     if (rootObj.contains(QStringLiteral("error"))) {
         const QJsonObject errorObj = rootObj.value(QStringLiteral("error")).toObject();
         m_streamErrorMessage = errorObj.value(QStringLiteral("message"))
-                                   .toString(QStringLiteral("流式请求失败"));
+                                   .toString(tr("流式请求失败"));
         return;
     }
 
     if (type == QStringLiteral("error") || type == QStringLiteral("response.failed")) {
         m_streamErrorMessage = rootObj.value(QStringLiteral("message"))
-                                   .toString(QStringLiteral("流式请求失败"));
+                                   .toString(tr("流式请求失败"));
         if (m_streamErrorMessage.isEmpty()) {
             const QJsonObject responseObj = rootObj.value(QStringLiteral("response")).toObject();
             const QJsonObject errorObj = responseObj.value(QStringLiteral("error")).toObject();
             m_streamErrorMessage = errorObj.value(QStringLiteral("message"))
-                                       .toString(QStringLiteral("流式请求失败"));
+                                       .toString(tr("流式请求失败"));
         }
         return;
     }

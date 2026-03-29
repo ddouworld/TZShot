@@ -63,11 +63,11 @@ void AIViewModel::rebuildAiCall()
             [this](AIErrorType errorType, const QString &errorMsg) {
         QString prefix;
         switch (errorType) {
-        case AIErrorType::NetworkError:  prefix = "网络错误：";  break;
-        case AIErrorType::ApiError:      prefix = "API 错误：";  break;
-        case AIErrorType::TimeoutError:  prefix = "超时错误：";  break;
-        case AIErrorType::ParamError:    prefix = "参数错误：";  break;
-        default:                         prefix = "未知错误：";  break;
+        case AIErrorType::NetworkError:  prefix = AIViewModel::tr("网络错误：");  break;
+        case AIErrorType::ApiError:      prefix = AIViewModel::tr("API 错误：");  break;
+        case AIErrorType::TimeoutError:  prefix = AIViewModel::tr("超时错误：");  break;
+        case AIErrorType::ParamError:    prefix = AIViewModel::tr("参数错误：");  break;
+        default:                         prefix = AIViewModel::tr("未知错误：");  break;
         }
         const QString msg = prefix + errorMsg;
         qWarning() << "[AIViewModel]" << msg;
@@ -108,7 +108,7 @@ void AIViewModel::sendPrompt(const QString &prompt, const QString &imageUrl)
         return;
     }
     if (prompt.trimmed().isEmpty()) {
-        emit signalRequestFailed("提示词不能为空");
+        emit signalRequestFailed(tr("提示词不能为空"));
         return;
     }
 
@@ -159,7 +159,8 @@ void AIViewModel::sendPrompt(const QString &prompt, const QString &imageUrl)
             setLoading(false);
 
             if (reply->error() != QNetworkReply::NoError) {
-                const QString msg = QStringLiteral("下载生成图片失败：") + reply->errorString();
+                const QString msg = tr("下载生成图片失败：")
+                                    + reply->errorString();
                 qWarning() << "[AIViewModel]" << msg;
                 emit signalRequestFailed(msg);
                 return;
@@ -167,7 +168,7 @@ void AIViewModel::sendPrompt(const QString &prompt, const QString &imageUrl)
 
             QImage newImage;
             if (!newImage.load(reply, nullptr)) {
-                const QString msg = QStringLiteral("生成图片解码失败");
+                const QString msg = tr("生成图片解码失败");
                 qWarning() << "[AIViewModel]" << msg;
                 emit signalRequestFailed(msg);
                 return;
@@ -185,6 +186,6 @@ void AIViewModel::sendPrompt(const QString &prompt, const QString &imageUrl)
         setLoading(false);
         disconnect(m_aiCall, &AICallBase::requestSuccess, this, nullptr);
         emit signalRequestFailed(
-            QStringLiteral("请求发起失败：") + m_aiCall->lastErrorString());
+            tr("请求发起失败：") + m_aiCall->lastErrorString());
     }
 }
