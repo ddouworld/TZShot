@@ -1,90 +1,90 @@
 # TZshot
 
-[English](./README_EN.md)
+[English](./README.md) | [中文](./README_CN.md)
 
-## 功能截图
+## Screenshots
 
-| 标注贴图 | AI 图像编辑 |
+| Sticky Annotate | AI Image Edit |
 | --- | --- |
-| ![标注贴图](docs/images/sticky-annotate.png) | ![AI 图像编辑](docs/images/ai-edit.png) |
+| ![Sticky Annotate](docs/images/sticky-annotate.png) | ![AI Image Edit](docs/images/ai-edit.png) |
 
-| AI 视觉理解 | 长截图 |
+| AI Vision | Long Capture |
 | --- | --- |
-| ![AI 视觉理解](docs/images/ai-vision.png) | ![长截图](docs/images/long-capture.png) |
+| ![AI Vision](docs/images/ai-vision.png) | ![Long Capture](docs/images/long-capture.png) |
 
-| OCR 结果 | GIF 录制 |
+| OCR Result | GIF Record |
 | --- | --- |
-| ![OCR 结果](docs/images/ocr-result.png) | ![GIF 录制](docs/images/gif-record.png) |
+| ![OCR Result](docs/images/ocr-result.png) | ![GIF Record](docs/images/gif-record.png) |
 
-## 开源许可
+## License
 
-本项目采用 **GNU General Public License v3.0（GPL-3.0-only）** 开源。  
-详见仓库根目录 [LICENSE](./LICENSE)。
+This project is licensed under **GNU General Public License v3.0 (GPL-3.0-only)**.  
+See [LICENSE](./LICENSE).
 
-## 项目简介
+## Overview
 
-`TZshot` 是一个基于 **Qt 6 Widgets + C++** 的截图与贴图工具，支持多屏截图、框选标注、贴图编辑、长截图、OCR、GIF 录制、全局快捷键、系统托盘、AI 图像编辑和 AI 图像理解。
+`TZshot` is a screenshot and pin-image utility built with **Qt 6 Widgets + C++**. It supports multi-screen capture, region annotation, sticky image editing, long screenshots, OCR, GIF recording, global shortcuts, tray integration, AI image editing, and AI visual understanding.
 
-## 主要功能
+## Features
 
-- 多屏截图，支持虚拟桌面坐标与跨屏场景
-- 截图浮层
-  - 框选、拖拽、八方向调整选区
-  - 放大镜取色预览
-  - 回车执行默认动作，Esc 取消
-- 标注工具
-  - 矩形、圆形、箭头、画笔
-  - 文字标注
-  - 序号标注，支持自动递增
-  - 高亮、马赛克、模糊
-  - 撤销
-- 截图结果操作
-  - 复制到剪贴板
-  - 保存到文件
-  - 贴图到桌面
-  - OCR 识别
-  - 长截图
-  - GIF 录制
-- 贴图窗口
-  - 拖拽、透明度调整
-  - 缩放、旋转、镜像、1:1 恢复
-  - 标注、OCR、右键菜单
-  - AI 图像编辑与 AI 图像理解
-- 长截图控制条与预览浮窗
-- GIF 录制
-- OCR 结果浮窗
-- 全局快捷键
-- 系统托盘菜单
-- 中英文切换
+- Multi-screen capture with virtual desktop coordinates
+- Capture overlay
+  - Region selection, moving, and 8-direction resizing
+  - Magnifier preview with pixel color readout
+  - `Enter` performs the default action, `Esc` cancels
+- Annotation tools
+  - Rectangle, circle, arrow, freehand pen
+  - Text annotation
+  - Number annotation with auto-increment
+  - Highlight, mosaic, blur
+  - Undo
+- Output actions
+  - Copy to clipboard
+  - Save to file
+  - Pin to desktop
+  - OCR
+  - Long screenshot
+  - GIF recording
+- Sticky window
+  - Dragging and opacity control
+  - Zoom, rotate, mirror, reset to 1:1
+  - Annotation, OCR, context menu actions
+  - AI image editing and AI visual understanding
+- Long screenshot toolbar with floating preview
+- GIF recording
+- OCR result window
+- Global shortcuts
+- System tray menu
+- Chinese and English UI switching
 
-## 技术栈
+## Tech Stack
 
 - C++17
 - Qt 6
   - Core / Gui / Widgets / Network / Concurrent / LinguistTools
 - CMake
-- 全局快捷键
+- Global shortcuts
   - Windows: `RegisterHotKey`
   - Linux(X11): `xcb_grab_key`
 
-## 当前架构
+## Architecture
 
 - `src/app/`
-  - 应用启动、服务组装、Widget 运行时管理
+  - App bootstrap, service wiring, and widget runtime management
 - `src/widgets/`
-  - 截图浮层、贴图窗口、设置窗口、OCR 结果窗、关于窗口等界面层
+  - Capture overlay, sticky windows, settings dialog, OCR result window, about dialog, and related UI
 - `src/viewmodel/`
-  - 截图、贴图、长截图、GIF、OCR、存储、AI 等业务逻辑
+  - Business logic for capture, sticky images, long screenshot, GIF, OCR, storage, and AI
 - `src/model/`
-  - 桌面快照、应用设置
+  - Desktop snapshot and persisted app settings
 - `src/paint_board/shape/`
-  - 各类标注图形实现
+  - Annotation shape implementations
 - `resource/`
-  - 图标与 QSS 样式资源
+  - Icons and QSS resources
 - `i18n/`
-  - 中英文翻译
+  - Chinese and English translations
 
-## 目录结构
+## Project Structure
 
 ```text
 TZshot/
@@ -103,70 +103,70 @@ TZshot/
 └─ CMakeLists.txt
 ```
 
-## 环境要求
+## Requirements
 
 - CMake >= 3.16
 - Qt 6.x
-- C++17 编译器
+- C++17 compiler
 
 Windows:
 - MSVC 2019/2022
 
 Linux:
-- X11/xcb 相关开发库
+- X11/xcb development libraries
 
-## 构建与运行
+## Build and Run
 
-### 方式一：Qt Creator（推荐）
+### Option 1: Qt Creator
 
-1. 打开项目根目录 `CMakeLists.txt`
-2. 选择 Qt 6 Kit
+1. Open the project root `CMakeLists.txt`
+2. Select a Qt 6 kit
 3. Configure -> Build -> Run
 
-### 方式二：命令行
+### Option 2: Command Line
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
-Windows 运行：
+Run on Windows:
 
 ```bash
 ./build/Release/TZshot.exe
 ```
 
-Qt Creator + Ninja 常见路径：
+Typical Qt Creator + Ninja output path:
 
 ```bash
 ./build/<kit-name>/TZshot.exe
 ```
 
-Linux 运行：
+Run on Linux:
 
 ```bash
 ./build/TZshot
 ```
 
-## OCR 依赖说明（Windows）
+## OCR Notes on Windows
 
-- 首次配置或构建时，CMake 会自动拉取并构建 `Leptonica`、`Tesseract`
-- 输出目录位于 `thirdpart/ocr-install`
-- 项目默认不自动下载 `tessdata`
-- 请手动准备并放置
+- On first configure or build, CMake will fetch and build `Leptonica` and `Tesseract`
+- Output is placed under `thirdpart/ocr-install`
+- This project does not auto-download `tessdata`
+- Please prepare and place these files manually
   - `thirdpart/ocr-install/share/tessdata/chi_sim.traineddata`
   - `thirdpart/ocr-install/share/tessdata/eng.traineddata`
 
-若缺少上述文件，运行时会出现 `Tesseract Init 失败：未找到可用 tessdata`。
+If they are missing, OCR will fail at runtime with `Tesseract Init failed: no usable tessdata found`.
 
-## 默认快捷键
+## Default Shortcuts
 
-- `Alt + A`: 截图
-- `Alt + S`: 截图并保存
-- `Alt + P`: 贴图到桌面
-- `Alt + Q`: 显示或隐藏窗口
+- `Alt + A`: Screenshot
+- `Alt + S`: Screenshot and Save
+- `Alt + P`: Pin to Desktop
+- `Alt + Q`: Show or Hide Window
 
-## 配置项（QSettings）
+## Configuration (QSettings)
 
 - AI
   - `AI/apiKey`
@@ -179,23 +179,24 @@ Linux 运行：
   - `Vision/proxyType`
   - `Vision/proxyHost`
   - `Vision/proxyPort`
-- 快捷键
+- Shortcuts
   - `Shortcuts/screenshot`
   - `Shortcuts/screenshotSave`
   - `Shortcuts/sticky`
   - `Shortcuts/toggle`
-- 通用
+- General
   - `App/language`
   - `ImageSaver/savePath`
 
-## 已知说明
+## Notes
 
-- Linux 全局快捷键目前基于 X11，暂不覆盖 Wayland 原生实现
-- 置顶浮层与贴图窗口体验目前以 Windows 最完整
-- GIF、OCR 与长截图仍可继续做跨平台增强
+- Linux global shortcuts currently rely on X11 and do not yet cover native Wayland support
+- Floating overlay and sticky window experience is currently most complete on Windows
+- GIF, OCR, and long screenshot flows still have room for more cross-platform refinement
 
-## 贡献与安全提示
+## Contributing and Security
 
-- 请勿提交真实的 `API Key`、令牌或个人隐私数据
-- 建议统一使用 `UTF-8（无 BOM）` 与 `LF`
-- 修改第三方依赖时，请同步补充许可证说明
+- Do not commit real `API Key`s, tokens, or private data
+- Use `UTF-8 (no BOM)` and `LF` line endings when possible
+- When updating third-party dependencies, include their license notices
+
