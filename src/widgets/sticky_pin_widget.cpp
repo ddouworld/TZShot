@@ -10,6 +10,7 @@
 #include <QCloseEvent>
 #include <QFile>
 #include <QContextMenuEvent>
+#include <QEvent>
 #include <QFileDialog>
 #include <QFrame>
 #include <QHBoxLayout>
@@ -28,6 +29,7 @@
 #include <QStyle>
 #include <QTimer>
 #include <QToolButton>
+#include <QToolTip>
 #include <QVector>
 #include <QVBoxLayout>
 #include <QWindow>
@@ -71,6 +73,18 @@ qreal monitorScaleForPoint(const QPoint &physicalPoint)
         return screen->devicePixelRatio();
     }
     return 1.0;
+}
+
+bool isAltWheelActive(const QWheelEvent *event)
+{
+    if (event && event->modifiers().testFlag(Qt::AltModifier)) {
+        return true;
+    }
+#ifdef Q_OS_WIN
+    return (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+#else
+    return QGuiApplication::keyboardModifiers().testFlag(Qt::AltModifier);
+#endif
 }
 
 QPoint physicalOffsetForLogicalPoint(const QPoint &logicalPoint, const QPoint &referencePhysicalPoint)
@@ -280,6 +294,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
     m_canvas = new StickyCanvasWidget(this);
     m_canvas->setBackgroundImage(m_image);
     m_canvas->setViewScale(m_zoomFactor);
+    m_canvas->setContentOpacity(m_contentOpacity);
     m_canvas->setPenColor(m_currentPenColor);
     m_canvas->setPenSize(m_currentPenSize);
     m_canvas->setActiveShapeType(PEN);
@@ -494,7 +509,7 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
     connect(m_aiLoadingTimer, &QTimer::timeout, this, [this]() {
         m_aiLoadingFrame = (m_aiLoadingFrame + 1) % 12;
         updateAiLoadingIcon();
-        update(contentRect());
+        update();
     });
 
     auto setupButton = [](QToolButton *button, const QString &tooltip) {
@@ -607,6 +622,20 @@ StickyPinWidget::StickyPinWidget(const QString &imageUrl,
     });
     connect(m_closeButton, &QToolButton::clicked, this, &QWidget::close);
 
+    const auto wheelAwareWidgets = findChildren<QWidget*>();
+    for (QWidget *child : wheelAwareWidgets) {
+        if (!child) {
+            continue;
+        }
+        if (child == m_visionResultWidget) {
+            continue;
+        }
+        if (m_visionResultWidget && m_visionResultWidget->isAncestorOf(child)) {
+            continue;
+        }
+        child->installEventFilter(this);
+    }
+
     updateLayoutAndSize();
     if (!m_colorButtons.isEmpty()) {
         m_colorButtons.first()->setChecked(true);
@@ -639,17 +668,18 @@ void StickyPinWidget::paintEvent(QPaintEvent *event)
     painter.fillRect(rect(), Qt::transparent);
 
     const QRect imageRect = contentRect();
+    const qreal contentOpacity = qBound<qreal>(0.05, m_contentOpacity, 1.0);
     if (m_shadowVisible) {
         for (int i = 10; i >= 1; --i) {
-            const int alpha = 3 + i * 2;
+            const int alpha = qRound((3 + i * 2) * contentOpacity);
             painter.setPen(Qt::NoPen);
             painter.setBrush(QColor(47, 143, 255, alpha));
             painter.drawRoundedRect(imageRect.adjusted(-i, -i, i, i), 8, 8);
         }
     }
 
-    painter.setPen(QPen(QColor(120, 182, 255, 80), 1));
-    painter.setBrush(Qt::white);
+    painter.setPen(QPen(QColor(120, 182, 255, qRound(80 * contentOpacity)), 1));
+    painter.setBrush(QColor(255, 255, 255, qRound(255 * contentOpacity)));
     painter.drawRoundedRect(imageRect, 4, 4);
 
     painter.setBrush(Qt::NoBrush);
@@ -870,17 +900,72 @@ void StickyPinWidget::mousePressEvent(QMouseEvent *event)
     QWidget::mousePressEvent(event);
 }
 
+bool StickyPinWidget::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched && event && event->type() == QEvent::Wheel) {
+        auto *wheelEvent = static_cast<QWheelEvent *>(event);
+        if (isAltOpacityAdjustActive(wheelEvent) && handleWheelInteraction(wheelEvent)) {
+            return true;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
 void StickyPinWidget::wheelEvent(QWheelEvent *event)
 {
+    if (handleWheelInteraction(event)) {
+        return;
+    }
+    QWidget::wheelEvent(event);
+}
+
+bool StickyPinWidget::handleWheelInteraction(QWheelEvent *event)
+{
+    if (!event) {
+        return false;
+    }
+
     const QPoint angleDelta = event->angleDelta();
-    if (angleDelta.y() == 0) {
-        QWidget::wheelEvent(event);
+    const int primaryDelta = (angleDelta.y() != 0) ? angleDelta.y() : angleDelta.x();
+    const bool altActive = isAltOpacityAdjustActive(event);
+    if (primaryDelta == 0) {
+        return false;
+    }
+
+    if (altActive) {
+        const qreal delta = primaryDelta > 0 ? 0.05 : -0.05;
+        const qreal nextOpacity = qBound<qreal>(0.05, m_contentOpacity + delta, 1.0);
+        setContentOpacity(nextOpacity);
+        QToolTip::showText(event->globalPosition().toPoint(),
+                           tr("透明度 %1%").arg(qRound(nextOpacity * 100)),
+                           this);
+        event->accept();
+        return true;
+    }
+
+    const qreal step = primaryDelta > 0 ? 1.1 : 0.9;
+    setZoomFactor(m_zoomFactor * step);
+    event->accept();
+    return true;
+}
+
+bool StickyPinWidget::isAltOpacityAdjustActive(const QWheelEvent *event) const
+{
+    return isAltWheelActive(event);
+}
+
+void StickyPinWidget::setContentOpacity(qreal value)
+{
+    const qreal next = qBound<qreal>(0.05, value, 1.0);
+    if (qFuzzyCompare(m_contentOpacity, next)) {
         return;
     }
 
-    const qreal step = angleDelta.y() > 0 ? 1.1 : 0.9;
-    setZoomFactor(m_zoomFactor * step);
-    event->accept();
+    m_contentOpacity = next;
+    if (m_canvas) {
+        m_canvas->setContentOpacity(next);
+    }
+    update();
 }
 
 void StickyPinWidget::setZoomFactor(qreal value)
@@ -896,6 +981,7 @@ void StickyPinWidget::setZoomFactor(qreal value)
     if (m_canvas) {
         m_canvas->setViewScale(m_zoomFactor);
         m_canvas->setBackgroundImage(m_image);
+        m_canvas->setContentOpacity(m_contentOpacity);
     }
     updateLayoutAndSize();
     update();
@@ -1003,7 +1089,7 @@ void StickyPinWidget::setAiLoading(bool loading)
         if (m_aiLoadingTimer) {
             m_aiLoadingTimer->start();
         }
-        update(contentRect());
+        update();
         return;
     }
 
@@ -1013,7 +1099,7 @@ void StickyPinWidget::setAiLoading(bool loading)
     if (m_aiButton) {
         m_aiButton->setIcon(QIcon(QStringLiteral(":/resource/img/lc_chat.svg")));
     }
-    update(contentRect());
+    update();
 }
 
 void StickyPinWidget::updateAiLoadingIcon()
@@ -1264,3 +1350,5 @@ int StickyPinWidget::toolbarWidth() const
 {
     return 32 * 16 + 52 + 2 * 16 + 12;
 }
+
+

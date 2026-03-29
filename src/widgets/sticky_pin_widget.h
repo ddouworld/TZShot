@@ -42,6 +42,7 @@ protected:
     void contextMenuEvent(QContextMenuEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     void setActiveTool(Shapeype type, QToolButton *activeButton);
@@ -49,6 +50,9 @@ private:
     void updateToolOptionsPanel();
     void updateLayoutAndSize();
     QToolButton *currentActiveToolButton() const;
+    bool handleWheelInteraction(QWheelEvent *event);
+    bool isAltOpacityAdjustActive(const QWheelEvent *event) const;
+    void setContentOpacity(qreal value);
     void setZoomFactor(qreal value);
     void openAiEditor();
     void openVisionWindow();
@@ -122,8 +126,10 @@ private:
     bool m_aiLoading = false;
     int m_aiLoadingFrame = 0;
     qreal m_zoomFactor = 1.0;
+    qreal m_contentOpacity = 1.0;
     QTimer *m_aiLoadingTimer = nullptr;
     bool m_released = false;
 };
 
 #endif // STICKY_PIN_WIDGET_H
+

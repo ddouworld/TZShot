@@ -51,6 +51,16 @@ void StickyCanvasWidget::setViewScale(qreal scale)
     update();
 }
 
+void StickyCanvasWidget::setContentOpacity(qreal opacity)
+{
+    const qreal next = qBound<qreal>(0.05, opacity, 1.0);
+    if (qFuzzyCompare(m_contentOpacity, next)) {
+        return;
+    }
+    m_contentOpacity = next;
+    update();
+}
+
 void StickyCanvasWidget::setActiveShapeType(Shapeype type)
 {
     m_shapeType = type;
@@ -180,6 +190,9 @@ void StickyCanvasWidget::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
+
+    painter.save();
+    painter.setOpacity(m_contentOpacity);
     if (m_backgroundVisible) {
         painter.fillRect(rect(), Qt::white);
     }
@@ -188,7 +201,6 @@ void StickyCanvasWidget::paintEvent(QPaintEvent *event)
         painter.drawImage(rect(), m_backgroundImage);
     }
 
-    painter.save();
     painter.scale(m_viewScale, m_viewScale);
     for (Shape *shape : m_shapes) {
         if (shape) {
@@ -311,3 +323,5 @@ void StickyCanvasWidget::clearShapes()
     qDeleteAll(m_shapes);
     m_shapes.clear();
 }
+
+

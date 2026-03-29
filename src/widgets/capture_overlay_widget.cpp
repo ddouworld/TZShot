@@ -613,6 +613,20 @@ void CaptureOverlayWidget::mouseReleaseEvent(QMouseEvent *event)
         setCursor(m_selection.cursorShape());
         if (m_selection.hasSelection()) {
             refreshCanvasForSelection(false);
+            if (m_defaultAction == CaptureAction::Sticky || m_defaultAction == CaptureAction::Save) {
+                const CaptureAction action = m_defaultAction;
+                if (m_magnifier) {
+                    m_magnifier->hide();
+                }
+                update();
+                event->accept();
+                QTimer::singleShot(0, this, [this, action]() {
+                    if (isVisible() && m_selection.hasSelection()) {
+                        performAction(action);
+                    }
+                });
+                return;
+            }
             updateToolbarGeometry();
             m_toolbar->show();
             m_toolbar->raise();
@@ -1162,3 +1176,5 @@ QString CaptureOverlayWidget::defaultSaveFilePath() const
                                  .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss")));
     return QDir(baseDir).filePath(fileName);
 }
+
+

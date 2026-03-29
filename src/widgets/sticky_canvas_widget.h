@@ -21,6 +21,7 @@ public:
     void setBackgroundImage(const QImage &image);
     void setBackgroundVisible(bool visible);
     void setViewScale(qreal scale);
+    void setContentOpacity(qreal opacity);
     void setActiveShapeType(Shapeype type);
     void setPenColor(const QColor &color);
     void setPenSize(int size);
@@ -67,7 +68,9 @@ private:
     bool m_drawingEnabled = false;
     bool m_draggingShape = false;
     qreal m_viewScale = 1.0;
+    qreal m_contentOpacity = 1.0;
     QPoint m_startPoint;
 };
 
 #endif // STICKY_CANVAS_WIDGET_H
+
