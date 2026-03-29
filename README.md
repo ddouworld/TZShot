@@ -1,74 +1,74 @@
 # TZshot
 
-[中文](#中文) | [English](#english)
+[English](./README_EN.md)
 
-## Screenshots / 功能截图
+## 功能截图
 
 | 标注贴图 | AI 图像编辑 |
 | --- | --- |
-| ![Sticky Annotate](docs/images/sticky-annotate.png) | ![AI Edit](docs/images/ai-edit.png) |
+| ![标注贴图](docs/images/sticky-annotate.png) | ![AI 图像编辑](docs/images/ai-edit.png) |
 
 | AI 视觉理解 | 长截图 |
 | --- | --- |
-| ![AI Vision](docs/images/ai-vision.png) | ![Long Capture](docs/images/long-capture.png) |
+| ![AI 视觉理解](docs/images/ai-vision.png) | ![长截图](docs/images/long-capture.png) |
 
 | OCR 结果 | GIF 录制 |
 | --- | --- |
-| ![OCR Result](docs/images/ocr-result.png) | ![GIF Record](docs/images/gif-record.png) |
+| ![OCR 结果](docs/images/ocr-result.png) | ![GIF 录制](docs/images/gif-record.png) |
 
----
+## 开源许可
 
-## 中文
-
-### 开源许可
 本项目采用 **GNU General Public License v3.0（GPL-3.0-only）** 开源。  
 详见仓库根目录 [LICENSE](./LICENSE)。
 
-### 项目简介
-`TZshot` 是一个基于 **Qt 6 Widgets + C++** 的截图与贴图工具，支持多屏截图、框选标注、贴图编辑、长截图、OCR、GIF 录制、全局快捷键、系统托盘和 AI 图像编辑。
+## 项目简介
 
-### 主要功能
-- 多屏截图（虚拟桌面坐标、跨屏场景）
-- 截图浮层：
+`TZshot` 是一个基于 **Qt 6 Widgets + C++** 的截图与贴图工具，支持多屏截图、框选标注、贴图编辑、长截图、OCR、GIF 录制、全局快捷键、系统托盘、AI 图像编辑和 AI 图像理解。
+
+## 主要功能
+
+- 多屏截图，支持虚拟桌面坐标与跨屏场景
+- 截图浮层
   - 框选、拖拽、八方向调整选区
   - 放大镜取色预览
   - 回车执行默认动作，Esc 取消
-- 标注工具：
+- 标注工具
   - 矩形、圆形、箭头、画笔
-  - 文字标注（文本内容、背景开关）
-  - 序号标注（支持自动递增）
-  - 马赛克（可调强度）
-  - 模糊
+  - 文字标注
+  - 序号标注，支持自动递增
+  - 高亮、马赛克、模糊
   - 撤销
-- 截图结果：
+- 截图结果操作
   - 复制到剪贴板
   - 保存到文件
   - 贴图到桌面
   - OCR 识别
   - 长截图
   - GIF 录制
-- 贴图窗口：
+- 贴图窗口
   - 拖拽、透明度调整
   - 缩放、旋转、镜像、1:1 恢复
   - 标注、OCR、右键菜单
-  - 完成后复制、另存为/覆盖闭环
+  - AI 图像编辑与 AI 图像理解
 - 长截图控制条与预览浮窗
-- GIF 录制（框选区域录制、编码后自动打开保存目录）
-- OCR 识别结果浮窗
-- 全局快捷键（可配置并持久化）
+- GIF 录制
+- OCR 结果浮窗
+- 全局快捷键
 - 系统托盘菜单
-- 中英文切换（切换后自动重启应用）
-- AI 图像编辑与视觉理解（可配置服务商、模型与 API Key）
+- 中英文切换
 
-### 技术栈
+## 技术栈
+
 - C++17
-- Qt 6（Core / Gui / Widgets / Network / Concurrent / LinguistTools）
+- Qt 6
+  - Core / Gui / Widgets / Network / Concurrent / LinguistTools
 - CMake
-- 全局快捷键：
+- 全局快捷键
   - Windows: `RegisterHotKey`
   - Linux(X11): `xcb_grab_key`
 
-### 当前架构
+## 当前架构
+
 - `src/app/`
   - 应用启动、服务组装、Widget 运行时管理
 - `src/widgets/`
@@ -84,7 +84,8 @@
 - `i18n/`
   - 中英文翻译
 
-### 目录结构
+## 目录结构
+
 ```text
 TZshot/
 ├─ src/
@@ -102,59 +103,71 @@ TZshot/
 └─ CMakeLists.txt
 ```
 
-### 环境要求
+## 环境要求
+
 - CMake >= 3.16
 - Qt 6.x
 - C++17 编译器
 
 Windows:
-- MSVC 2019/2022（推荐使用 Qt Creator 对应 Kit）
+- MSVC 2019/2022
 
 Linux:
 - X11/xcb 相关开发库
 
-### 构建与运行
-#### 方式一：Qt Creator（推荐）
+## 构建与运行
+
+### 方式一：Qt Creator（推荐）
+
 1. 打开项目根目录 `CMakeLists.txt`
 2. 选择 Qt 6 Kit
 3. Configure -> Build -> Run
 
-#### 方式二：命令行
+### 方式二：命令行
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
-运行（Windows，Visual Studio 生成器）：
+Windows 运行：
+
 ```bash
 ./build/Release/TZshot.exe
 ```
 
-运行（Windows，Qt Creator + Ninja 常见路径）：
+Qt Creator + Ninja 常见路径：
+
 ```bash
 ./build/<kit-name>/TZshot.exe
 ```
 
-运行（Linux，路径以实际生成为准）：
+Linux 运行：
+
 ```bash
 ./build/TZshot
 ```
 
-### OCR 依赖说明（Windows）
-- 首次配置/构建时，CMake 会自动从 GitHub 拉取并构建 `Leptonica`、`Tesseract`（输出到项目根目录 `thirdpart/ocr-install`）。
-- 项目默认**不自动下载**语言数据文件（`tessdata`）。
-- 请手动准备并放置：
+## OCR 依赖说明（Windows）
+
+- 首次配置或构建时，CMake 会自动拉取并构建 `Leptonica`、`Tesseract`
+- 输出目录位于 `thirdpart/ocr-install`
+- 项目默认不自动下载 `tessdata`
+- 请手动准备并放置
   - `thirdpart/ocr-install/share/tessdata/chi_sim.traineddata`
   - `thirdpart/ocr-install/share/tessdata/eng.traineddata`
-- 若缺少上述文件，运行时会出现 `Tesseract Init 失败：未找到可用 tessdata`。
 
-### 默认快捷键
+若缺少上述文件，运行时会出现 `Tesseract Init 失败：未找到可用 tessdata`。
+
+## 默认快捷键
+
 - `Alt + A`: 截图
 - `Alt + S`: 截图并保存
 - `Alt + P`: 贴图到桌面
-- `Alt + Q`: 显示/隐藏窗口
+- `Alt + Q`: 显示或隐藏窗口
 
-### 配置项（QSettings）
+## 配置项（QSettings）
+
 - AI
   - `AI/apiKey`
   - `AI/selectedModel`
@@ -172,185 +185,17 @@ cmake --build build --config Release
   - `Shortcuts/sticky`
   - `Shortcuts/toggle`
 - 通用
-  - `App/language`（`zh_CN` / `en`）
+  - `App/language`
   - `ImageSaver/savePath`
 
-### 已知说明
-- Linux 全局快捷键目前基于 X11（暂不覆盖 Wayland 原生实现）
-- 部分浮层/置顶窗口交互仍以 Windows 体验最完整
-- GIF、OCR 与长截图能力仍可继续做跨平台增强
+## 已知说明
 
-### 贡献与安全提示
-- 请勿提交任何真实的 `API Key`、令牌或个人隐私数据。
-- 提交前建议自查编码与换行：`UTF-8（无 BOM）` + `LF`。
-- 若修改第三方依赖，请同步补充其许可证说明。
+- Linux 全局快捷键目前基于 X11，暂不覆盖 Wayland 原生实现
+- 置顶浮层与贴图窗口体验目前以 Windows 最完整
+- GIF、OCR 与长截图仍可继续做跨平台增强
 
----
+## 贡献与安全提示
 
-## English
-
-### License
-This project is licensed under **GNU General Public License v3.0 (GPL-3.0-only)**.  
-See [LICENSE](./LICENSE) in the repository root.
-
-### Overview
-`TZshot` is a screenshot and pin-image utility built with **Qt 6 Widgets + C++**.  
-It supports multi-screen capture, region annotations, sticky image editing, long screenshots, OCR, GIF recording, global shortcuts, tray integration, and AI image editing.
-
-### Key Features
-- Multi-screen capture (virtual desktop coordinates)
-- Capture overlay:
-  - Region selection, moving, and 8-direction resize
-  - Magnifier preview with pixel color readout
-  - `Enter` performs the default action, `Esc` cancels
-- Annotation tools:
-  - Rectangle, circle, arrow, freehand pen
-  - Text annotation (text content + background toggle)
-  - Number annotation (auto-increment supported)
-  - Mosaic (adjustable intensity)
-  - Blur
-  - Undo
-- Output actions:
-  - Copy to clipboard
-  - Save to file
-  - Pin to desktop (sticky window)
-  - OCR
-  - Long screenshot
-  - GIF recording
-- Sticky window:
-  - Drag, opacity control
-  - Zoom, rotate, mirror, reset-to-1:1
-  - Annotate, OCR, context menu actions
-  - Apply-and-copy / save-as / overwrite workflow
-- Long screenshot controller with floating preview
-- GIF recording for a selected region, with save folder auto-open after encoding
-- OCR result window
-- Configurable global shortcuts (persisted)
-- System tray menu
-- Chinese/English UI switching (app restarts after switching)
-- AI image editing and visual understanding with configurable provider, model, and API key
-
-### Tech Stack
-- C++17
-- Qt 6 (Core / Gui / Widgets / Network / Concurrent / LinguistTools)
-- CMake
-- Global shortcuts:
-  - Windows: `RegisterHotKey`
-  - Linux(X11): `xcb_grab_key`
-
-### Current Architecture
-- `src/app/`
-  - App bootstrap, service wiring, and widget runtime management
-- `src/widgets/`
-  - Capture overlay, sticky windows, settings dialog, OCR result window, about dialog, and related UI
-- `src/viewmodel/`
-  - Business logic for capture, sticky images, long screenshot, GIF, OCR, storage, and AI
-- `src/model/`
-  - Desktop snapshot and persisted app settings
-- `src/paint_board/shape/`
-  - Annotation shape implementations
-- `resource/`
-  - Icons and QSS resources
-- `i18n/`
-  - Chinese and English translations
-
-### Project Structure
-```text
-TZshot/
-├─ src/
-│  ├─ app/
-│  ├─ widgets/
-│  ├─ model/
-│  ├─ viewmodel/
-│  ├─ paint_board/
-│  ├─ shortcut_key/
-│  ├─ ocr/
-│  └─ ai_call/
-├─ i18n/
-├─ resource/
-├─ thirdpart/
-└─ CMakeLists.txt
-```
-
-### Requirements
-- CMake >= 3.16
-- Qt 6.x
-- C++17 compiler
-
-Windows:
-- MSVC 2019/2022 (Qt Creator kit recommended)
-
-Linux:
-- X11/xcb development libraries
-
-### Build & Run
-#### Option 1: Qt Creator (Recommended)
-1. Open `CMakeLists.txt` in project root
-2. Select a Qt 6 kit
-3. Configure -> Build -> Run
-
-#### Option 2: Command Line
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
-```
-
-Run on Windows:
-```bash
-./build/Release/TZshot.exe
-```
-
-Run on Windows with a typical Qt Creator + Ninja kit:
-```bash
-./build/<kit-name>/TZshot.exe
-```
-
-Run on Linux (path may vary by generator):
-```bash
-./build/TZshot
-```
-
-### OCR Notes (Windows)
-- On first configure/build, CMake auto-fetches and builds `Leptonica` and `Tesseract` from GitHub into `thirdpart/ocr-install` (project root).
-- This project does **not** auto-download language data (`tessdata`).
-- Please add these files manually:
-  - `thirdpart/ocr-install/share/tessdata/chi_sim.traineddata`
-  - `thirdpart/ocr-install/share/tessdata/eng.traineddata`
-- If they are missing, OCR will fail at runtime with `Tesseract Init failed: no usable tessdata found`.
-
-### Default Shortcuts
-- `Alt + A`: Screenshot
-- `Alt + S`: Screenshot and Save
-- `Alt + P`: Pin to Desktop
-- `Alt + Q`: Show/Hide Window
-
-### Configuration (QSettings)
-- AI
-  - `AI/apiKey`
-  - `AI/selectedModel`
-- Vision
-  - `Vision/apiKey`
-  - `Vision/provider`
-  - `Vision/model`
-  - `Vision/proxyEnabled`
-  - `Vision/proxyType`
-  - `Vision/proxyHost`
-  - `Vision/proxyPort`
-- Shortcuts
-  - `Shortcuts/screenshot`
-  - `Shortcuts/screenshotSave`
-  - `Shortcuts/sticky`
-  - `Shortcuts/toggle`
-- General
-  - `App/language` (`zh_CN` / `en`)
-  - `ImageSaver/savePath`
-
-### Notes
-- Linux global shortcuts currently rely on X11 (no native Wayland implementation yet)
-- Windows currently has the most complete floating-window experience
-- GIF, OCR, and long-screenshot flows still have room for more cross-platform refinement
-
-### Contributing & Security
-- Do not commit real API keys, tokens, or private data.
-- Keep source files in `UTF-8 (no BOM)` with `LF` line endings.
-- When adding/updating third-party dependencies, include their license notices.
+- 请勿提交真实的 `API Key`、令牌或个人隐私数据
+- 建议统一使用 `UTF-8（无 BOM）` 与 `LF`
+- 修改第三方依赖时，请同步补充许可证说明

@@ -73,6 +73,18 @@ qreal monitorScaleForPoint(const QPoint &physicalPoint)
     return 1.0;
 }
 
+QPoint physicalOffsetForLogicalPoint(const QPoint &logicalPoint, const QPoint &referencePhysicalPoint)
+{
+#ifdef Q_OS_WIN
+    const qreal dpr = qMax<qreal>(1.0, monitorScaleForPoint(referencePhysicalPoint));
+    return QPoint(qRound(logicalPoint.x() * dpr),
+                  qRound(logicalPoint.y() * dpr));
+#else
+    Q_UNUSED(referencePhysicalPoint);
+    return logicalPoint;
+#endif
+}
+
 QIcon makeAiLoadingIcon(int frame, const QSize &size)
 {
     QPixmap pixmap(size);
@@ -950,12 +962,17 @@ void StickyPinWidget::applyAiImage(const QString &oldImageUrl, const QString &ne
     }
 
     const QString previousUrl = m_imageUrl;
+    const QSize oldBaseDisplaySize = m_baseImageDisplaySize;
+    const QSize oldDisplaySize = m_imageDisplaySize;
     m_imageUrl = newImageUrl;
     m_image = newImage;
-    m_baseImageDisplaySize = QSize(qMax(1, qRound(m_image.width() / qMax<qreal>(1.0, m_image.devicePixelRatio()))),
-                                   qMax(1, qRound(m_image.height() / qMax<qreal>(1.0, m_image.devicePixelRatio()))));
-    m_imageDisplaySize = QSize(qMax(1, qRound(m_baseImageDisplaySize.width() * m_zoomFactor)),
-                               qMax(1, qRound(m_baseImageDisplaySize.height() * m_zoomFactor)));
+    const qreal dpr = screenScaleForRect(m_physicalRect);
+    if (!m_image.isNull() && dpr > 0.0) {
+        m_image.setDevicePixelRatio(dpr);
+        m_store->replaceImage(m_imageUrl, m_image);
+    }
+    m_baseImageDisplaySize = oldBaseDisplaySize;
+    m_imageDisplaySize = oldDisplaySize;
     if (m_canvas) {
         m_canvas->setViewScale(m_zoomFactor);
         m_canvas->reset();
@@ -1045,7 +1062,9 @@ qreal StickyPinWidget::screenScaleForRect(const QRect &physicalRect) const
 
 void StickyPinWidget::applyNativePosition(const QRect &physicalRect)
 {
-    const QPoint nativeTopLeft = physicalRect.topLeft() - contentRect().topLeft();
+    const QPoint contentOffset = physicalOffsetForLogicalPoint(contentRect().topLeft(),
+                                                               physicalRect.topLeft());
+    const QPoint nativeTopLeft = physicalRect.topLeft() - contentOffset;
 #ifdef Q_OS_WIN
     if (HWND hwnd = reinterpret_cast<HWND>(winId())) {
         SetWindowPos(hwnd,
@@ -1151,7 +1170,10 @@ QPoint StickyPinWidget::currentContentTopLeftPhysical() const
     if (HWND hwnd = reinterpret_cast<HWND>(const_cast<StickyPinWidget*>(this)->winId())) {
         RECT rc{};
         if (GetWindowRect(hwnd, &rc)) {
-            return QPoint(rc.left, rc.top) + contentRect().topLeft();
+            const QPoint windowTopLeft(rc.left, rc.top);
+            const QPoint contentOffset = physicalOffsetForLogicalPoint(contentRect().topLeft(),
+                                                                       windowTopLeft);
+            return windowTopLeft + contentOffset;
         }
     }
 #endif

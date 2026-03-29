@@ -98,6 +98,24 @@ ScreenshotViewModel::ScreenshotViewModel(DesktopSnapshot  &snapshot,
 {
 }
 
+QRect ScreenshotViewModel::mapLogicalGlobalRectToPhysicalRect(const QRect &rect) const
+{
+    const QRect r = rect.normalized();
+    if (r.isEmpty() || m_snapshot.isNull()) {
+        return {};
+    }
+
+#ifdef Q_OS_WIN
+    const QRect physicalLocalRect = m_snapshot.mapLogicalRectToPhysical(r);
+    if (physicalLocalRect.isEmpty()) {
+        return {};
+    }
+    return physicalLocalRect.translated(m_snapshot.virtualGeometry().topLeft());
+#else
+    return r;
+#endif
+}
+
 QRect ScreenshotViewModel::captureRectForDisplay(const QRect &rect) const
 {
     const QRect r = rect.normalized();

@@ -174,6 +174,11 @@ void AIViewModel::sendPrompt(const QString &prompt, const QString &imageUrl)
                 return;
             }
 
+            const QImage originalImage = m_store.getImageByUrl(originalUrl);
+            if (!originalImage.isNull() && originalImage.devicePixelRatio() > 0.0) {
+                newImage.setDevicePixelRatio(originalImage.devicePixelRatio());
+            }
+
             const QString newStickyUrl = m_store.storeImage(newImage);
             qDebug() << "[AIViewModel] 新贴图 URL：" << newStickyUrl;
             // 同时发出原图 URL，让各贴图窗口判断是否是自己触发的请求

@@ -757,10 +757,23 @@ void CaptureOverlayWidget::refreshSnapshot()
 
 QRect CaptureOverlayWidget::selectionInGlobal() const
 {
-    const QRect selection = m_selection.rect();
+    const QRect selection = m_selection.rect().normalized();
     if (selection.isEmpty()) {
         return {};
     }
+
+#ifdef Q_OS_WIN
+    if (m_screenCapture) {
+        const QPoint logicalGlobalTopLeft = mapToGlobal(selection.topLeft());
+        const QRect logicalGlobalRect(logicalGlobalTopLeft, selection.size());
+        const QRect physicalGlobalRect =
+            m_screenCapture->mapLogicalGlobalRectToPhysicalRect(logicalGlobalRect);
+        if (!physicalGlobalRect.isEmpty()) {
+            return physicalGlobalRect;
+        }
+    }
+#endif
+
     return selection.translated(m_virtualGeometry.topLeft());
 }
 

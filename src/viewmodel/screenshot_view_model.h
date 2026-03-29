@@ -25,6 +25,7 @@ public:
     {
         return m_snapshot.mapLogicalPointToPhysical(point);
     }
+    Q_INVOKABLE QRect mapLogicalGlobalRectToPhysicalRect(const QRect &rect) const;
     Q_INVOKABLE QRect mapLogicalRectToPhysicalRect(const QRect &rect) const
     {
         return captureRectForDisplay(rect);
