@@ -2,7 +2,9 @@
 
 #include "paint_board/shape/blur_shape.h"
 #include "paint_board/shape/mosaic_shape.h"
+#include "paint_board/shape/text_shape.h"
 
+#include <QApplication>
 #include <QMouseEvent>
 #include <QPainter>
 
@@ -63,6 +65,10 @@ void StickyCanvasWidget::setContentOpacity(qreal opacity)
 
 void StickyCanvasWidget::setActiveShapeType(Shapeype type)
 {
+    if (m_shapeType != type && type != TEXT) {
+        clearSelectedText();
+        update();
+    }
     m_shapeType = type;
 }
 
@@ -82,17 +88,9 @@ void StickyCanvasWidget::setDrawingEnabled(bool enabled)
     setAttribute(Qt::WA_TransparentForMouseEvents, !m_drawingEnabled);
     if (!m_drawingEnabled) {
         finishCurrentShape();
+        clearSelectedText();
+        update();
     }
-}
-
-void StickyCanvasWidget::setAnnotationText(const QString &text)
-{
-    m_annotationText = text;
-}
-
-void StickyCanvasWidget::setTextBackgroundEnabled(bool enabled)
-{
-    m_textBackgroundEnabled = enabled;
 }
 
 void StickyCanvasWidget::setNumberValue(int value)
@@ -105,7 +103,11 @@ void StickyCanvasWidget::setNumberAutoIncrement(bool enabled)
     m_numberAutoIncrement = enabled;
 }
 
-void StickyCanvasWidget::addTextAnnotation(const QPoint &point, const QString &text)
+void StickyCanvasWidget::addTextAnnotation(const QPoint &point,
+                                           const QString &text,
+                                           const QColor &color,
+                                           int size,
+                                           bool withBackground)
 {
     const QString resolved = text.trimmed();
     if (resolved.isEmpty()) {
@@ -117,15 +119,15 @@ void StickyCanvasWidget::addTextAnnotation(const QPoint &point, const QString &t
 
     Shape *textShape = m_factory.createTextShape(imagePoint,
                                                  resolved,
-                                                 m_penColor,
-                                                 m_penSize,
-                                                 m_textBackgroundEnabled);
+                                                 color,
+                                                 size,
+                                                 withBackground);
     if (!textShape) {
         return;
     }
 
     m_shapes.append(textShape);
-    m_annotationText = resolved;
+    clearSelectedText();
     update();
 }
 
@@ -172,7 +174,11 @@ QImage StickyCanvasWidget::compositedImage(const QRect &displayRect) const
 void StickyCanvasWidget::undo()
 {
     if (!m_shapes.isEmpty()) {
+        const int removedIndex = m_shapes.size() - 1;
         delete m_shapes.takeLast();
+        if (m_selectedTextShapeIndex == removedIndex) {
+            clearSelectedText();
+        }
         update();
     }
 }
@@ -208,6 +214,8 @@ void StickyCanvasWidget::paintEvent(QPaintEvent *event)
         }
     }
 
+    drawSelectedTextOutline(&painter);
+
     if (m_currentShape) {
         m_currentShape->draw(&painter);
     }
@@ -224,11 +232,29 @@ void StickyCanvasWidget::mousePressEvent(QMouseEvent *event)
     const QPoint displayPoint = event->position().toPoint();
     m_startPoint = QPoint(qRound(displayPoint.x() / m_viewScale),
                           qRound(displayPoint.y() / m_viewScale));
+    m_textPressDisplayPoint = displayPoint;
 
     if (m_shapeType == TEXT) {
+        const int textIndex = findTopmostTextShapeIndex(m_startPoint);
+        if (textIndex >= 0) {
+            m_selectedTextShapeIndex = textIndex;
+            m_draggingSelectedText = false;
+            if (TextShape *textShape = textShapeAt(textIndex)) {
+                m_selectedTextDragOffset = m_startPoint - textShape->anchorPoint();
+            } else {
+                m_selectedTextDragOffset = QPoint();
+            }
+            update();
+            return;
+        }
+
+        clearSelectedText();
+        update();
         emit textPlacementRequested(displayPoint);
         return;
     }
+
+    clearSelectedText();
 
     if (m_shapeType == NUMBER) {
         Shape *numberShape = m_factory.createNumberShape(m_startPoint,
@@ -280,8 +306,59 @@ void StickyCanvasWidget::mousePressEvent(QMouseEvent *event)
     update();
 }
 
+void StickyCanvasWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (!m_drawingEnabled || m_shapeType != TEXT || event->button() != Qt::LeftButton) {
+        QWidget::mouseDoubleClickEvent(event);
+        return;
+    }
+
+    const QPoint displayPoint = event->position().toPoint();
+    const QPoint imagePoint(qRound(displayPoint.x() / m_viewScale),
+                            qRound(displayPoint.y() / m_viewScale));
+    const int textIndex = findTopmostTextShapeIndex(imagePoint);
+    TextShape *textShape = textShapeAt(textIndex);
+    if (!textShape) {
+        QWidget::mouseDoubleClickEvent(event);
+        return;
+    }
+
+    const QPoint anchorPoint = textShape->anchorPoint();
+    const QPoint displayAnchor(qRound(anchorPoint.x() * m_viewScale),
+                               qRound(anchorPoint.y() * m_viewScale));
+    const QString text = textShape->text();
+    const QColor color = textShape->color();
+    const int size = textShape->size();
+    const bool withBackground = textShape->withBackground();
+
+    delete m_shapes.takeAt(textIndex);
+    clearSelectedText();
+    update();
+    emit textEditRequested(displayAnchor, text, color, size, withBackground);
+}
+
 void StickyCanvasWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_shapeType == TEXT && (event->buttons() & Qt::LeftButton)) {
+        TextShape *selectedTextShape = textShapeAt(m_selectedTextShapeIndex);
+        if (selectedTextShape) {
+            if (!m_draggingSelectedText) {
+                const int dragDistance =
+                    (event->position().toPoint() - m_textPressDisplayPoint).manhattanLength();
+                if (dragDistance < QApplication::startDragDistance()) {
+                    return;
+                }
+                m_draggingSelectedText = true;
+            }
+
+            const QPoint imagePoint(qRound(event->position().x() / m_viewScale),
+                                    qRound(event->position().y() / m_viewScale));
+            selectedTextShape->setEndPoint(imagePoint - m_selectedTextDragOffset);
+            update();
+            return;
+        }
+    }
+
     if (!m_draggingShape || !m_currentShape) {
         QWidget::mouseMoveEvent(event);
         return;
@@ -295,6 +372,17 @@ void StickyCanvasWidget::mouseMoveEvent(QMouseEvent *event)
 
 void StickyCanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_shapeType == TEXT && event->button() == Qt::LeftButton) {
+        if (m_draggingSelectedText) {
+            m_draggingSelectedText = false;
+            update();
+            return;
+        }
+        if (m_selectedTextShapeIndex >= 0) {
+            return;
+        }
+    }
+
     if (!m_draggingShape || !m_currentShape || event->button() != Qt::LeftButton) {
         QWidget::mouseReleaseEvent(event);
         return;
@@ -322,6 +410,57 @@ void StickyCanvasWidget::clearShapes()
 {
     qDeleteAll(m_shapes);
     m_shapes.clear();
+    clearSelectedText();
+}
+
+void StickyCanvasWidget::clearSelectedText()
+{
+    m_selectedTextShapeIndex = -1;
+    m_draggingSelectedText = false;
+    m_textPressDisplayPoint = QPoint();
+    m_selectedTextDragOffset = QPoint();
+}
+
+int StickyCanvasWidget::findTopmostTextShapeIndex(const QPoint &point) const
+{
+    for (int i = m_shapes.size() - 1; i >= 0; --i) {
+        TextShape *textShape = textShapeAt(i);
+        if (textShape && textShape->contains(point)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+TextShape *StickyCanvasWidget::textShapeAt(int index) const
+{
+    if (index < 0 || index >= m_shapes.size()) {
+        return nullptr;
+    }
+    return dynamic_cast<TextShape *>(m_shapes.at(index));
+}
+
+void StickyCanvasWidget::drawSelectedTextOutline(QPainter *painter) const
+{
+    if (!painter || m_shapeType != TEXT) {
+        return;
+    }
+
+    TextShape *selectedTextShape = textShapeAt(m_selectedTextShapeIndex);
+    if (!selectedTextShape) {
+        return;
+    }
+
+    QPen pen(selectedTextShape->color());
+    pen.setWidth(1);
+    pen.setCosmetic(true);
+    pen.setStyle(Qt::CustomDashLine);
+    pen.setDashPattern({ 3, 3 });
+    painter->save();
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(selectedTextShape->boundingRect().adjusted(-3, -3, 3, 3));
+    painter->restore();
 }
 
 

@@ -2,6 +2,42 @@
 
 #include <QFont>
 #include <QFontMetrics>
+#include <QStringList>
+
+namespace {
+
+QFont textShapeFont(int size)
+{
+    QFont font(QStringLiteral("Microsoft YaHei"));
+    font.setStyleStrategy(QFont::PreferAntialias);
+    font.setHintingPreference(QFont::PreferNoHinting);
+    font.setPixelSize(qMax(12, size * 4));
+    return font;
+}
+
+QRect textShapeRect(const QPoint &point, const QString &text, int size)
+{
+    const QFont font = textShapeFont(size);
+    const QFontMetrics fm(font);
+    const QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+
+    int textWidth = 0;
+    for (const QString &line : lines) {
+        const QString lineForMeasure = line.isEmpty() ? QStringLiteral(" ") : line;
+        textWidth = qMax(textWidth, fm.horizontalAdvance(lineForMeasure));
+    }
+
+    const int lineCount = qMax(1, lines.size());
+    const int textHeight = fm.height() + qMax(0, lineCount - 1) * fm.lineSpacing();
+    const int padX = qMax(4, size);
+    const int padY = qMax(2, size / 2);
+    return QRect(point.x(),
+                 point.y() - fm.ascent() - padY,
+                 textWidth + padX * 2,
+                 textHeight + padY * 2);
+}
+
+}
 
 TextShape::TextShape(const QPoint& startPoint,
                      const QString& text,
@@ -27,18 +63,14 @@ void TextShape::draw(QPainter* painter)
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setRenderHint(QPainter::TextAntialiasing, true);
-    QFont f = painter->font();
-    f.setPixelSize(qMax(12, m_size * 4));
+    const QFont f = textShapeFont(m_size);
     painter->setFont(f);
 
     const QFontMetrics fm(f);
-    const QRect textRect = fm.boundingRect(m_text);
+    const QStringList lines = m_text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
     const int padX = qMax(4, m_size);
     const int padY = qMax(2, m_size / 2);
-    QRect drawRect(m_point.x(),
-                   m_point.y() - textRect.height(),
-                   textRect.width() + padX * 2,
-                   textRect.height() + padY * 2);
+    const QRect drawRect = textShapeRect(m_point, m_text, m_size);
 
     if (m_withBackground) {
         QColor bg(0, 0, 0, 140);
@@ -48,7 +80,21 @@ void TextShape::draw(QPainter* painter)
     }
 
     painter->setPen(m_color);
-    const QPoint textPos(drawRect.x() + padX, drawRect.y() + padY + fm.ascent());
-    painter->drawText(textPos, m_text);
+    int baselineY = drawRect.y() + padY + fm.ascent();
+    const int textX = drawRect.x() + padX;
+    for (const QString &line : lines) {
+        painter->drawText(QPoint(textX, baselineY), line);
+        baselineY += fm.lineSpacing();
+    }
     painter->restore();
+}
+
+QRect TextShape::boundingRect() const
+{
+    return textShapeRect(m_point, m_text, m_size);
+}
+
+bool TextShape::contains(const QPoint &point) const
+{
+    return boundingRect().adjusted(-2, -2, 2, 2).contains(point);
 }

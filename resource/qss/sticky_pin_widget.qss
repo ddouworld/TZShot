@@ -52,7 +52,6 @@
     background-color: #F1F5F9;
 }
 
-#stickyToolOptions QLineEdit,
 #stickyToolOptions QSpinBox {
     background-color: #F8FAFC;
     border: 1px solid #E2E8F0;
@@ -63,14 +62,6 @@
 
 #stickyToolOptions QCheckBox {
     color: #334155;
-}
-
-#stickyInlineTextEditor {
-    background-color: #FFFFFF;
-    border: 1px solid #3B82F6;
-    border-radius: 6px;
-    padding: 4px 6px;
-    color: #0F172A;
 }
 
 #stickyNumberLabel {

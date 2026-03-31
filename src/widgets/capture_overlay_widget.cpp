@@ -30,9 +30,13 @@
 #include <QToolButton>
 #include <QFrame>
 #include <QLabel>
-#include <QLineEdit>
+#include <QPlainTextEdit>
 #include <QResizeEvent>
 #include <QTimer>
+#include <QTextCursor>
+#include <QTextDocument>
+#include <QTextOption>
+#include <QVariant>
 #include <QVBoxLayout>
 
 #ifdef Q_OS_WIN
@@ -41,6 +45,48 @@
 #endif
 
 namespace {
+
+class AnnotationTextPanel : public QWidget
+{
+public:
+    explicit AnnotationTextPanel(QWidget *parent = nullptr)
+        : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TranslucentBackground, true);
+    }
+
+    void setBorderColor(const QColor &color)
+    {
+        if (m_borderColor == color) {
+            return;
+        }
+        m_borderColor = color;
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        QWidget::paintEvent(event);
+
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(0, 0, 0, 1));
+        painter.drawRect(rect());
+
+        QPen pen(m_borderColor);
+        pen.setWidth(1);
+        pen.setStyle(Qt::CustomDashLine);
+        pen.setDashPattern({ 3, 3 });
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(rect().adjusted(0, 0, -1, -1));
+    }
+
+private:
+    QColor m_borderColor = QColor(QStringLiteral("#F43F5E"));
+};
 
 QString loadCaptureOverlayStyleSheet()
 {
@@ -66,6 +112,82 @@ QToolButton *createToolbarButton(const QString &iconPath,
     return button;
 }
 
+QString normalizeAnnotationDraft(QString text)
+{
+    text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+    return text;
+}
+
+QString finalizeAnnotationText(const QString &text)
+{
+    return normalizeAnnotationDraft(text).trimmed();
+}
+
+void configureAnnotationEditor(QPlainTextEdit *editor)
+{
+    if (!editor) {
+        return;
+    }
+
+    editor->setFrameStyle(QFrame::NoFrame);
+    editor->setBackgroundVisible(false);
+    editor->setTabChangesFocus(false);
+    editor->setWordWrapMode(QTextOption::NoWrap);
+    editor->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    editor->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+}
+
+int annotationTextPixelSize(int penSize)
+{
+    return qMax(12, penSize * 4);
+}
+
+QFont annotationTextFont(int penSize)
+{
+    QFont font(QStringLiteral("Microsoft YaHei"));
+    font.setStyleStrategy(QFont::PreferAntialias);
+    font.setHintingPreference(QFont::PreferNoHinting);
+    font.setPixelSize(annotationTextPixelSize(penSize));
+    return font;
+}
+
+void syncAnnotationEditorFont(QPlainTextEdit *editor, int penSize)
+{
+    if (!editor) {
+        return;
+    }
+
+    editor->setFont(annotationTextFont(penSize));
+}
+
+void syncInlineAnnotationEditorAppearance(QWidget *panel,
+                                          QPlainTextEdit *editor,
+                                          const QColor &color,
+                                          int penSize)
+{
+    if (!panel || !editor) {
+        return;
+    }
+
+    syncAnnotationEditorFont(editor, penSize);
+    editor->setStyleSheet(QStringLiteral("color:%1; margin:0px; padding:0px; background:transparent; border:none;")
+        .arg(color.name()));
+    static_cast<AnnotationTextPanel *>(panel)->setBorderColor(color);
+}
+
+void syncOptionButtonState(const QVector<QToolButton *> &buttons,
+                           const char *propertyName,
+                           const QVariant &expectedValue)
+{
+    for (QToolButton *button : buttons) {
+        if (!button) {
+            continue;
+        }
+        button->setChecked(button->property(propertyName) == expectedValue);
+    }
+}
+
 }
 
 CaptureOverlayWidget::CaptureOverlayWidget(ScreenshotViewModel *screenCapture,
@@ -83,7 +205,7 @@ CaptureOverlayWidget::CaptureOverlayWidget(ScreenshotViewModel *screenCapture,
     , m_gifRecordViewModel(gifRecordViewModel)
     , m_widgetWindowBridge(widgetWindowBridge)
 {
-    m_annotationText = tr("文本");
+    m_annotationText.clear();
 
     setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_DeleteOnClose, false);
@@ -100,8 +222,6 @@ CaptureOverlayWidget::CaptureOverlayWidget(ScreenshotViewModel *screenCapture,
     m_canvas->setPenColor(m_currentPenColor);
     m_canvas->setPenSize(m_currentPenSize);
     m_canvas->setActiveShapeType(PEN);
-    m_canvas->setAnnotationText(m_annotationText);
-    m_canvas->setTextBackgroundEnabled(m_textBackgroundEnabled);
     m_canvas->setNumberAutoIncrement(m_numberAutoIncrement);
     m_canvas->setNumberValue(m_numberValue);
     connect(m_canvas, &StickyCanvasWidget::numberValueChanged, this, [this](int value) {
@@ -114,23 +234,29 @@ CaptureOverlayWidget::CaptureOverlayWidget(ScreenshotViewModel *screenCapture,
         }
     });
     connect(m_canvas, &StickyCanvasWidget::textPlacementRequested, this, [this](const QPoint &point) {
-        m_pendingTextPoint = point;
-        if (!m_inlineTextEditor || !m_inlineTextPanel || !m_canvas) {
-            return;
-        }
-        m_inlineTextEditor->setText(m_annotationText);
-        const QRect canvasRect = m_canvas->geometry();
-        const int panelW = 260;
-        const int panelH = 44;
-        int x = canvasRect.x() + point.x();
-        int y = canvasRect.y() + point.y() + 6;
-        x = qMax(canvasRect.x(), qMin(x, canvasRect.right() - panelW + 1));
-        y = qMax(canvasRect.y(), qMin(y, canvasRect.bottom() - panelH + 1));
-        m_inlineTextPanel->setGeometry(x, y, panelW, panelH);
-        m_inlineTextPanel->show();
-        m_inlineTextPanel->raise();
-        m_inlineTextEditor->setFocus();
-        m_inlineTextEditor->selectAll();
+        m_inlineEditingExistingText = false;
+        m_inlineOriginalText.clear();
+        m_annotationText.clear();
+        showInlineTextEditor(point, QString());
+    });
+    connect(m_canvas, &StickyCanvasWidget::textEditRequested, this,
+            [this](const QPoint &point,
+                   const QString &text,
+                   const QColor &color,
+                   int size,
+                   bool withBackground) {
+        m_inlineEditingExistingText = true;
+        m_inlineOriginalText = text;
+        m_inlineOriginalColor = color;
+        m_inlineOriginalSize = size;
+        m_inlineOriginalTextBackground = withBackground;
+        m_currentPenColor = color;
+        m_currentPenSize = size;
+        m_annotationText = text;
+        syncCanvasToolSettings();
+        updateToolOptionsPanel();
+        updateToolOptionsGeometry();
+        showInlineTextEditor(point, text);
     });
 
     m_toolOptions = new QWidget(this);
@@ -148,6 +274,7 @@ CaptureOverlayWidget::CaptureOverlayWidget(ScreenshotViewModel *screenCapture,
         button->setAutoRaise(false);
         button->setToolButtonStyle(Qt::ToolButtonIconOnly);
         button->setCursor(Qt::PointingHandCursor);
+        button->setProperty("annotationColor", color);
         button->setStyleSheet(QStringLiteral(
             "QToolButton { border: 1px solid #CBD5E1; border-radius: 9px; background-color: %1; }"
             "QToolButton:checked { border: 2px solid #3B82F6; background-color: %1; }"
@@ -174,6 +301,7 @@ CaptureOverlayWidget::CaptureOverlayWidget(ScreenshotViewModel *screenCapture,
         button->setCheckable(true);
         button->setText(preset.label);
         button->setCursor(Qt::PointingHandCursor);
+        button->setProperty("annotationSize", preset.value);
         connect(button, &QToolButton::clicked, this, [this, button, preset]() {
             for (QToolButton *other : m_sizeButtons) {
                 if (other != button) {
@@ -183,72 +311,33 @@ CaptureOverlayWidget::CaptureOverlayWidget(ScreenshotViewModel *screenCapture,
             button->setChecked(true);
             m_currentPenSize = preset.value;
             syncCanvasToolSettings();
+            if (m_canvas && m_canvas->drawingEnabled() && m_canvas->activeShapeType() == TEXT) {
+                updateToolOptionsPanel();
+                updateToolOptionsGeometry();
+            }
         });
         m_sizeButtons.append(button);
     }
 
-    m_textInput = new QLineEdit(m_toolOptions);
-    m_textInput->setPlaceholderText(tr("输入文字"));
-    m_textInput->setText(m_annotationText);
-    connect(m_textInput, &QLineEdit::textChanged, this, [this](const QString &text) {
-        m_annotationText = text;
-        if (m_canvas) {
-            m_canvas->setAnnotationText(m_annotationText);
-        }
-    });
-
-    m_inlineTextPanel = new QWidget(this);
+    m_inlineTextPanel = new AnnotationTextPanel(this);
     m_inlineTextPanel->setObjectName(QStringLiteral("captureOverlayInlineTextPanel"));
     m_inlineTextPanel->setAttribute(Qt::WA_StyledBackground, true);
+    m_inlineTextPanel->setAttribute(Qt::WA_TranslucentBackground, true);
     m_inlineTextPanel->hide();
     auto *inlineLayout = new QHBoxLayout(m_inlineTextPanel);
-    inlineLayout->setContentsMargins(6, 6, 6, 6);
-    inlineLayout->setSpacing(6);
+    inlineLayout->setContentsMargins(3, 3, 3, 3);
+    inlineLayout->setSpacing(0);
 
-    m_inlineTextEditor = new QLineEdit(m_inlineTextPanel);
+    m_inlineTextEditor = new QPlainTextEdit(m_inlineTextPanel);
     m_inlineTextEditor->setObjectName(QStringLiteral("captureOverlayInlineTextEditor"));
-    m_inlineTextEditor->setPlaceholderText(tr("输入文字"));
+    configureAnnotationEditor(m_inlineTextEditor);
+    m_inlineTextEditor->setPlaceholderText(QString());
     m_inlineTextEditor->installEventFilter(this);
     inlineLayout->addWidget(m_inlineTextEditor, 1);
-
-    m_inlineTextConfirmButton = createToolbarButton(QStringLiteral(":/resource/img/lc_check.svg"), tr("确认"), m_inlineTextPanel);
-    m_inlineTextCancelButton = createToolbarButton(QStringLiteral(":/resource/img/lc_x.svg"), tr("取消"), m_inlineTextPanel);
-    inlineLayout->addWidget(m_inlineTextConfirmButton);
-    inlineLayout->addWidget(m_inlineTextCancelButton);
-
-    const auto submitInlineText = [this]() {
-        const QString text = m_inlineTextEditor->text().trimmed();
-        if (m_canvas && !text.isEmpty()) {
-            m_annotationText = text;
-            if (m_textInput) {
-                m_textInput->setText(text);
-            }
-            m_canvas->setAnnotationText(text);
-            m_canvas->addTextAnnotation(m_pendingTextPoint, text);
-        }
-        if (m_inlineTextPanel) {
-            m_inlineTextPanel->hide();
-        }
-    };
-    connect(m_inlineTextEditor, &QLineEdit::returnPressed, this, submitInlineText);
-    connect(m_inlineTextConfirmButton, &QToolButton::clicked, this, submitInlineText);
-    connect(m_inlineTextCancelButton, &QToolButton::clicked, this, [this]() {
-        if (m_inlineTextPanel) {
-            m_inlineTextPanel->hide();
-        }
-    });
-    connect(m_inlineTextEditor, &QLineEdit::textChanged, this, [this](const QString &text) {
-        if (m_textInput && m_textInput->text() != text) {
-            m_textInput->setText(text);
-        }
-    });
-
-    m_textBackgroundCheck = new QCheckBox(tr("背景"), m_toolOptions);
-    m_textBackgroundCheck->setChecked(m_textBackgroundEnabled);
-    connect(m_textBackgroundCheck, &QCheckBox::toggled, this, [this](bool checked) {
-        m_textBackgroundEnabled = checked;
-        if (m_canvas) {
-            m_canvas->setTextBackgroundEnabled(checked);
+    connect(m_inlineTextEditor, &QPlainTextEdit::textChanged, this, [this]() {
+        m_annotationText = normalizeAnnotationDraft(m_inlineTextEditor->toPlainText());
+        if (m_inlineTextPanel && m_inlineTextPanel->isVisible()) {
+            updateInlineTextEditorGeometry();
         }
     });
 
@@ -555,9 +644,7 @@ void CaptureOverlayWidget::mousePressEvent(QMouseEvent *event)
         m_toolOptions->hide();
     }
     hideTipBubble();
-    if (m_inlineTextPanel) {
-        m_inlineTextPanel->hide();
-    }
+    cancelInlineText();
     m_selection.beginInteraction(event->position().toPoint());
     setCursor(m_selection.cursorShape());
     update();
@@ -678,11 +765,29 @@ bool CaptureOverlayWidget::eventFilter(QObject *watched, QEvent *event)
         if (event->type() == QEvent::KeyPress) {
             auto *keyEvent = static_cast<QKeyEvent *>(event);
             if (keyEvent->key() == Qt::Key_Escape) {
-                if (m_inlineTextPanel) {
-                    m_inlineTextPanel->hide();
-                }
+                cancelInlineText();
                 return true;
             }
+            if ((keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
+                && keyEvent->modifiers().testFlag(Qt::ControlModifier)) {
+                submitInlineText();
+                return true;
+            }
+        }
+        if (event->type() == QEvent::Wheel) {
+            auto *wheelEvent = static_cast<QWheelEvent *>(event);
+            const int delta = wheelEvent->angleDelta().y();
+            if (delta != 0) {
+                m_currentPenSize = qBound(3, m_currentPenSize + (delta > 0 ? 1 : -1), 40);
+                syncCanvasToolSettings();
+                updateToolOptionsPanel();
+                updateToolOptionsGeometry();
+                wheelEvent->accept();
+                return true;
+            }
+        }
+        if (event->type() == QEvent::FocusOut && m_inlineTextPanel && m_inlineTextPanel->isVisible()) {
+            submitInlineText();
         }
         return QWidget::eventFilter(watched, event);
     }
@@ -708,18 +813,98 @@ bool CaptureOverlayWidget::eventFilter(QObject *watched, QEvent *event)
     return QWidget::eventFilter(watched, event);
 }
 
+void CaptureOverlayWidget::showInlineTextEditor(const QPoint &point, const QString &initialText)
+{
+    m_pendingTextPoint = point;
+    if (!m_inlineTextEditor || !m_inlineTextPanel || !m_canvas) {
+        return;
+    }
+
+    m_annotationText = normalizeAnnotationDraft(initialText);
+    if (m_inlineTextEditor->toPlainText() != m_annotationText) {
+        m_inlineTextEditor->setPlainText(m_annotationText);
+    }
+    updateInlineTextEditorGeometry();
+    m_inlineTextPanel->show();
+    m_inlineTextPanel->raise();
+    m_inlineTextEditor->setFocus();
+    m_inlineTextEditor->moveCursor(QTextCursor::End);
+}
+
+void CaptureOverlayWidget::updateInlineTextEditorGeometry()
+{
+    if (!m_inlineTextEditor || !m_inlineTextPanel || !m_canvas) {
+        return;
+    }
+
+    const QRect canvasRect = m_canvas->geometry();
+    m_inlineTextEditor->document()->adjustSize();
+    const QSize docSize = m_inlineTextEditor->document()->size().toSize();
+    const QFontMetrics fm(m_inlineTextEditor->font());
+    int panelW = qMax(fm.horizontalAdvance(QStringLiteral(" ")), docSize.width()) + 6;
+    int panelH = qMax(fm.lineSpacing(), docSize.height()) + 6;
+    panelW = qMin(panelW, qMax(1, canvasRect.width() - 12));
+    panelW = qMin(panelW, qMax(1, width() - 12));
+    panelH = qMin(panelH, qMax(36, height() - 12));
+    const int padY = qMax(2, m_currentPenSize / 2);
+    int x = canvasRect.x() + m_pendingTextPoint.x();
+    int y = canvasRect.y() + m_pendingTextPoint.y() - fm.ascent() - padY;
+    x = qMax(6, qMin(x, width() - panelW - 6));
+    y = qMax(6, qMin(y, height() - panelH - 6));
+
+    m_inlineTextPanel->setGeometry(x, y, panelW, panelH);
+}
+
+void CaptureOverlayWidget::submitInlineText()
+{
+    if (!m_inlineTextEditor) {
+        return;
+    }
+
+    const QString text = finalizeAnnotationText(m_inlineTextEditor->toPlainText());
+    if (m_canvas && !text.isEmpty()) {
+        m_annotationText = text;
+        m_canvas->addTextAnnotation(m_pendingTextPoint,
+                                    text,
+                                    m_currentPenColor,
+                                    m_currentPenSize,
+                                    m_inlineEditingExistingText ? m_inlineOriginalTextBackground : false);
+    }
+
+    cancelInlineText(false);
+}
+
+void CaptureOverlayWidget::cancelInlineText(bool restoreOriginal)
+{
+    if (restoreOriginal && m_inlineEditingExistingText && m_canvas && !m_inlineOriginalText.isEmpty()) {
+        m_annotationText = m_inlineOriginalText;
+        m_canvas->addTextAnnotation(m_pendingTextPoint,
+                                    m_inlineOriginalText,
+                                    m_inlineOriginalColor,
+                                    m_inlineOriginalSize,
+                                    m_inlineOriginalTextBackground);
+    }
+
+    if (m_inlineTextPanel) {
+        m_inlineTextPanel->hide();
+    }
+    m_pendingTextPoint = QPoint();
+    m_inlineEditingExistingText = false;
+    m_inlineOriginalText.clear();
+    m_inlineOriginalColor = QColor("#F43F5E");
+    m_inlineOriginalSize = 6;
+    m_inlineOriginalTextBackground = false;
+}
+
 void CaptureOverlayWidget::resetState()
 {
     m_selection.reset();
-    m_pendingTextPoint = QPoint();
+    cancelInlineText();
     m_toolbar->hide();
     if (m_toolOptions) {
         m_toolOptions->hide();
     }
     hideTipBubble();
-    if (m_inlineTextPanel) {
-        m_inlineTextPanel->hide();
-    }
     if (m_canvas) {
         m_canvas->setDrawingEnabled(false);
         m_canvas->reset();
@@ -735,9 +920,6 @@ void CaptureOverlayWidget::resetState()
     }
     if (m_numberLabel) {
         m_numberLabel->setText(QString::number(m_numberValue));
-    }
-    if (m_textInput) {
-        m_textInput->setText(m_annotationText);
     }
     if (m_magnifier) {
         m_magnifier->hide();
@@ -861,9 +1043,7 @@ void CaptureOverlayWidget::setActiveTool(Shapeype type, QToolButton *button)
         return;
     }
 
-    if (m_inlineTextPanel) {
-        m_inlineTextPanel->hide();
-    }
+    cancelInlineText();
     m_canvas->setDrawingEnabled(active);
     if (active) {
         m_canvas->setActiveShapeType(type);
@@ -881,10 +1061,15 @@ void CaptureOverlayWidget::syncCanvasToolSettings()
 
     m_canvas->setPenColor(m_currentPenColor);
     m_canvas->setPenSize(m_currentPenSize);
-    m_canvas->setAnnotationText(m_annotationText);
-    m_canvas->setTextBackgroundEnabled(m_textBackgroundEnabled);
     m_canvas->setNumberAutoIncrement(m_numberAutoIncrement);
     m_canvas->setNumberValue(m_numberValue);
+
+    syncOptionButtonState(m_colorButtons, "annotationColor", m_currentPenColor);
+    syncOptionButtonState(m_sizeButtons, "annotationSize", m_currentPenSize);
+    syncInlineAnnotationEditorAppearance(m_inlineTextPanel, m_inlineTextEditor, m_currentPenColor, m_currentPenSize);
+    if (m_inlineTextPanel && m_inlineTextPanel->isVisible()) {
+        updateInlineTextEditorGeometry();
+    }
 }
 
 void CaptureOverlayWidget::updateToolOptionsPanel()
@@ -896,14 +1081,11 @@ void CaptureOverlayWidget::updateToolOptionsPanel()
     const bool visible = m_toolbar->isVisible() && m_canvas->drawingEnabled() && !m_gifRecordingMode;
     m_toolOptions->setVisible(visible);
     if (!visible) {
-        if (m_inlineTextPanel) {
-            m_inlineTextPanel->hide();
-        }
+        cancelInlineText();
         return;
     }
 
     const Shapeype type = m_canvas->activeShapeType();
-    const bool showTextOptions = (type == TEXT);
     const bool showNumberOptions = (type == NUMBER);
     const bool showColorOptions = (type != MOSAIC && type != BLUR);
 
@@ -923,13 +1105,6 @@ void CaptureOverlayWidget::updateToolOptionsPanel()
         button->setVisible(true);
         button->setGeometry(x, y, 48, 28);
         x += 54;
-    }
-
-    if (m_textInput && m_textBackgroundCheck) {
-        m_textInput->setVisible(showTextOptions);
-        m_textBackgroundCheck->setVisible(showTextOptions);
-        m_textInput->setGeometry(10, 68, 160, 32);
-        m_textBackgroundCheck->setGeometry(182, 72, 64, 24);
     }
 
     if (m_numberAutoIncrementCheck && m_numberMinusButton && m_numberLabel && m_numberPlusButton) {
@@ -1007,7 +1182,7 @@ QRect CaptureOverlayWidget::toolOptionsRect() const
     const int width = 260;
     const Shapeype type = m_canvas ? m_canvas->activeShapeType() : PEN;
     int height = 88;
-    if (type == TEXT || type == NUMBER) {
+    if (type == NUMBER) {
         height = 116;
     } else if (type == MOSAIC || type == BLUR) {
         height = 48;

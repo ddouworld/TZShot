@@ -16,7 +16,7 @@ class QLabel;
 class QProgressBar;
 class QTimer;
 class QCheckBox;
-class QLineEdit;
+class QPlainTextEdit;
 class ScreenshotViewModel;
 class StickyViewModel;
 class StorageViewModel;
@@ -75,6 +75,10 @@ private:
     void syncCanvasToolSettings();
     void updateToolOptionsPanel();
     QToolButton *currentActiveToolButton() const;
+    void showInlineTextEditor(const QPoint &point, const QString &initialText);
+    void updateInlineTextEditorGeometry();
+    void submitInlineText();
+    void cancelInlineText(bool restoreOriginal = true);
     void updateToolbarGeometry();
     void updateMagnifier(const QPoint &localPos);
     void updateToolOptionsGeometry();
@@ -103,11 +107,7 @@ private:
     StickyCanvasWidget *m_canvas = nullptr;
     QWidget *m_toolOptions = nullptr;
     QWidget *m_inlineTextPanel = nullptr;
-    QLineEdit *m_inlineTextEditor = nullptr;
-    QToolButton *m_inlineTextConfirmButton = nullptr;
-    QToolButton *m_inlineTextCancelButton = nullptr;
-    QLineEdit *m_textInput = nullptr;
-    QCheckBox *m_textBackgroundCheck = nullptr;
+    QPlainTextEdit *m_inlineTextEditor = nullptr;
     QCheckBox *m_numberAutoIncrementCheck = nullptr;
     QToolButton *m_numberMinusButton = nullptr;
     QLabel *m_numberLabel = nullptr;
@@ -133,10 +133,14 @@ private:
     QColor m_currentPenColor = QColor("#F43F5E");
     int m_currentPenSize = 6;
     QString m_annotationText;
-    bool m_textBackgroundEnabled = true;
     bool m_numberAutoIncrement = true;
     int m_numberValue = 1;
     QPoint m_pendingTextPoint;
+    bool m_inlineEditingExistingText = false;
+    QString m_inlineOriginalText;
+    QColor m_inlineOriginalColor = QColor("#F43F5E");
+    int m_inlineOriginalSize = 6;
+    bool m_inlineOriginalTextBackground = false;
 
     GifRecordOverlayWidget *m_gifOverlay = nullptr;
     MagnifierWidget *m_magnifier = nullptr;

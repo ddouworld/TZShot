@@ -178,7 +178,6 @@ QToolTip {
     background-color: #F1F5F9;
 }
 
-#captureOverlayToolOptions QLineEdit,
 #captureOverlayToolOptions QSpinBox {
     background-color: #F8FAFC;
     border: 1px solid #E2E8F0;
@@ -189,20 +188,6 @@ QToolTip {
 
 #captureOverlayToolOptions QCheckBox {
     color: #334155;
-}
-
-#captureOverlayInlineTextEditor {
-    background-color: #FFFFFF;
-    border: 1px solid #3B82F6;
-    border-radius: 6px;
-    padding: 4px 6px;
-    color: #0F172A;
-}
-
-#captureOverlayInlineTextPanel {
-    background-color: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    border-radius: 10px;
 }
 
 #captureOverlayNumberLabel {

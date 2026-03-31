@@ -15,6 +15,11 @@ public:
 
     void setEndPoint(const QPoint& point) override;
     void draw(QPainter* painter) override;
+    bool contains(const QPoint &point) const;
+    QRect boundingRect() const;
+    QPoint anchorPoint() const { return m_point; }
+    QString text() const { return m_text; }
+    bool withBackground() const { return m_withBackground; }
 
 private:
     QPoint  m_point;
