@@ -16,6 +16,7 @@ MagnifierWidget::MagnifierWidget(QWidget *parent)
     : QWidget(parent)
 {
     setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
     setAttribute(Qt::WA_NoSystemBackground, true);
     setFixedSize(kOuterWidth, kOuterHeight);
     hide();
@@ -45,8 +46,13 @@ void MagnifierWidget::updateView(const QPoint &localPoint,
     if (y + height() > overlaySize.height()) {
         y = localPoint.y() - height() - kOffset;
     }
-    move(x, y);
-    show();
+    const QPoint nextPos(x, y);
+    if (pos() != nextPos) {
+        move(nextPos);
+    }
+    if (!isVisible()) {
+        show();
+    }
     raise();
     update();
 }

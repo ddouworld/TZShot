@@ -21,6 +21,7 @@
 #include <QHBoxLayout>
 #include <QImage>
 #include <QKeyEvent>
+#include <QKeySequence>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QProgressBar>
@@ -209,12 +210,24 @@ CaptureOverlayWidget::CaptureOverlayWidget(ScreenshotViewModel *screenCapture,
 
     setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_DeleteOnClose, false);
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
+    setAttribute(Qt::WA_NoSystemBackground, true);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 
     setStyleSheet(loadCaptureOverlayStyleSheet());
 
     m_magnifier = new MagnifierWidget(this);
+    m_magnifierUpdateTimer = new QTimer(this);
+    m_magnifierUpdateTimer->setSingleShot(true);
+    connect(m_magnifierUpdateTimer, &QTimer::timeout, this, [this]() {
+        if (!m_hasPendingMagnifierPos) {
+            return;
+        }
+        m_hasPendingMagnifierPos = false;
+        updateMagnifier(m_pendingMagnifierPos);
+        m_magnifierFrameTimer.restart();
+    });
     m_canvas = new StickyCanvasWidget(this);
     m_canvas->hide();
     m_canvas->setViewScale(1.0);
@@ -559,6 +572,11 @@ void CaptureOverlayWidget::showAndActivate(const QString &mode)
     setDefaultAction(mode);
     refreshSnapshot();
     resetState();
+    m_magnifierFrameTimer.invalidate();
+    m_hasPendingMagnifierPos = false;
+    if (m_magnifierUpdateTimer) {
+        m_magnifierUpdateTimer->stop();
+    }
     if (!m_virtualGeometry.isEmpty()) {
         setGeometry(m_virtualGeometry);
     }
@@ -600,18 +618,27 @@ void CaptureOverlayWidget::setWidgetWindowBridge(WidgetWindowBridge *widgetWindo
 
 void CaptureOverlayWidget::paintEvent(QPaintEvent *event)
 {
-    Q_UNUSED(event);
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    const QRect dirtyRect = event ? event->rect() : rect();
 
     if (m_screenCapture) {
-        painter.drawPixmap(rect(), m_screenCapture->desktopSnapshot());
+        const QPixmap snapshot = m_screenCapture->desktopSnapshot();
+        const qreal dpr = qMax<qreal>(1.0, snapshot.devicePixelRatio());
+        const QSize logicalSize(qRound(snapshot.width() / dpr), qRound(snapshot.height() / dpr));
+        if (!snapshot.isNull() && logicalSize == size()) {
+            painter.drawPixmap(dirtyRect, snapshot, dirtyRect);
+        } else {
+            painter.drawPixmap(rect(), snapshot);
+        }
     } else {
-        painter.fillRect(rect(), Qt::black);
+        painter.fillRect(dirtyRect, Qt::black);
     }
 
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    if (event) {
+        painter.setClipRegion(event->region());
+    }
     m_selection.paint(painter, rect());
-
 }
 
 void CaptureOverlayWidget::resizeEvent(QResizeEvent *event)
@@ -645,9 +672,10 @@ void CaptureOverlayWidget::mousePressEvent(QMouseEvent *event)
     }
     hideTipBubble();
     cancelInlineText();
+    const QRect previousSelection = currentSelectionRect();
     m_selection.beginInteraction(event->position().toPoint());
     setCursor(m_selection.cursorShape());
-    update();
+    updateSelectionVisualRegion(previousSelection, currentSelectionRect());
 }
 
 void CaptureOverlayWidget::mouseMoveEvent(QMouseEvent *event)
@@ -655,30 +683,44 @@ void CaptureOverlayWidget::mouseMoveEvent(QMouseEvent *event)
     const QPoint pos = event->position().toPoint();
 
     if (m_gifRecordingMode) {
+        m_hasPendingMagnifierPos = false;
+        if (m_magnifierUpdateTimer) {
+            m_magnifierUpdateTimer->stop();
+        }
         QWidget::mouseMoveEvent(event);
         return;
     }
 
     if (m_canvas && m_canvas->drawingEnabled()) {
+        m_hasPendingMagnifierPos = false;
+        if (m_magnifierUpdateTimer) {
+            m_magnifierUpdateTimer->stop();
+        }
         QWidget::mouseMoveEvent(event);
         return;
     }
 
     if (event->buttons() & Qt::LeftButton) {
+        const QRect previousSelection = currentSelectionRect();
         m_selection.updateInteraction(pos, size());
         setCursor(m_selection.cursorShape());
-        updateToolbarGeometry();
-        updateMagnifier(pos);
-        update();
+        updateSelectionVisualRegion(previousSelection, currentSelectionRect());
+        scheduleMagnifierUpdate(pos);
         return;
     }
 
+    const QRect selectionBeforeHover = currentSelectionRect();
     m_selection.updateHover(pos);
     if (m_toolbar && !m_toolbar->isVisible()) {
-        updateMagnifier(pos);
+        scheduleMagnifierUpdate(pos);
     } else if (m_magnifier) {
+        m_hasPendingMagnifierPos = false;
+        if (m_magnifierUpdateTimer) {
+            m_magnifierUpdateTimer->stop();
+        }
         m_magnifier->hide();
     }
+    updateSelectionVisualRegion(selectionBeforeHover, currentSelectionRect());
     setCursor(m_selection.cursorShape());
     QWidget::mouseMoveEvent(event);
 }
@@ -695,8 +737,10 @@ void CaptureOverlayWidget::mouseReleaseEvent(QMouseEvent *event)
             event->accept();
             return;
         }
+        const QRect previousSelection = currentSelectionRect();
         m_selection.endInteraction();
         m_selection.updateHover(event->position().toPoint());
+        updateSelectionVisualRegion(previousSelection, currentSelectionRect());
         setCursor(m_selection.cursorShape());
         if (m_selection.hasSelection()) {
             refreshCanvasForSelection(false);
@@ -705,7 +749,7 @@ void CaptureOverlayWidget::mouseReleaseEvent(QMouseEvent *event)
                 if (m_magnifier) {
                     m_magnifier->hide();
                 }
-                update();
+                update(selectionVisualRect(currentSelectionRect()));
                 event->accept();
                 QTimer::singleShot(0, this, [this, action]() {
                     if (isVisible() && m_selection.hasSelection()) {
@@ -730,6 +774,16 @@ void CaptureOverlayWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void CaptureOverlayWidget::keyPressEvent(QKeyEvent *event)
 {
+    if (event
+        && event->matches(QKeySequence::Undo)
+        && (!m_inlineTextPanel || !m_inlineTextPanel->isVisible())
+        && m_canvas
+        && m_canvas->hasAnnotations()) {
+        m_canvas->undo();
+        event->accept();
+        return;
+    }
+
     switch (event->key()) {
     case Qt::Key_Escape:
         if (m_gifRecordingMode && m_gifRecordViewModel) {
@@ -773,6 +827,9 @@ bool CaptureOverlayWidget::eventFilter(QObject *watched, QEvent *event)
                 submitInlineText();
                 return true;
             }
+            if (keyEvent->matches(QKeySequence::Undo)) {
+                return QWidget::eventFilter(watched, event);
+            }
         }
         if (event->type() == QEvent::Wheel) {
             auto *wheelEvent = static_cast<QWheelEvent *>(event);
@@ -790,6 +847,19 @@ bool CaptureOverlayWidget::eventFilter(QObject *watched, QEvent *event)
             submitInlineText();
         }
         return QWidget::eventFilter(watched, event);
+    }
+
+    if (event && event->type() == QEvent::KeyPress) {
+        auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->matches(QKeySequence::Undo)
+            && watched != m_inlineTextEditor
+            && (!m_inlineTextPanel || !m_inlineTextPanel->isVisible())
+            && m_canvas
+            && m_canvas->hasAnnotations()) {
+            m_canvas->undo();
+            keyEvent->accept();
+            return true;
+        }
     }
 
     auto *button = qobject_cast<QToolButton *>(watched);
@@ -900,6 +970,10 @@ void CaptureOverlayWidget::resetState()
 {
     m_selection.reset();
     cancelInlineText();
+    m_hasPendingMagnifierPos = false;
+    if (m_magnifierUpdateTimer) {
+        m_magnifierUpdateTimer->stop();
+    }
     m_toolbar->hide();
     if (m_toolOptions) {
         m_toolOptions->hide();
@@ -930,7 +1004,7 @@ void CaptureOverlayWidget::resetState()
     m_gifRecordingMode = false;
     m_gifGlobalCaptureRect = {};
     setCursor(Qt::CrossCursor);
-    update();
+    update(rect());
 }
 
 void CaptureOverlayWidget::refreshSnapshot()
@@ -1162,6 +1236,42 @@ void CaptureOverlayWidget::updateMagnifier(const QPoint &localPos)
     const QPoint globalPos = localPos + m_virtualGeometry.topLeft();
     const QColor pixelColor = m_screenCapture->getPixelColor(globalPos.x(), globalPos.y());
     m_magnifier->updateView(localPos, globalPos, pixelColor, size());
+}
+
+void CaptureOverlayWidget::scheduleMagnifierUpdate(const QPoint &localPos)
+{
+    m_pendingMagnifierPos = localPos;
+    m_hasPendingMagnifierPos = true;
+
+    constexpr int kMagnifierFrameIntervalMs = 16;
+    if (!m_magnifierFrameTimer.isValid() || m_magnifierFrameTimer.elapsed() >= kMagnifierFrameIntervalMs) {
+        m_hasPendingMagnifierPos = false;
+        updateMagnifier(localPos);
+        m_magnifierFrameTimer.restart();
+        return;
+    }
+
+    if (m_magnifierUpdateTimer && !m_magnifierUpdateTimer->isActive()) {
+        const int delay = kMagnifierFrameIntervalMs - int(m_magnifierFrameTimer.elapsed());
+        m_magnifierUpdateTimer->start(qMax(1, delay));
+    }
+}
+
+QRect CaptureOverlayWidget::selectionVisualRect(const QRect &selection) const
+{
+    if (selection.isEmpty()) {
+        return {};
+    }
+
+    return selection.adjusted(-140, -48, 140, 28).intersected(rect());
+}
+
+void CaptureOverlayWidget::updateSelectionVisualRegion(const QRect &before, const QRect &after)
+{
+    const QRect dirty = selectionVisualRect(before).united(selectionVisualRect(after));
+    if (!dirty.isEmpty()) {
+        update(dirty);
+    }
 }
 
 void CaptureOverlayWidget::updateToolOptionsGeometry()

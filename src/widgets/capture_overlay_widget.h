@@ -3,6 +3,7 @@
 
 #include <QPointer>
 #include <QColor>
+#include <QElapsedTimer>
 #include <QPoint>
 #include <QString>
 #include <QVector>
@@ -81,6 +82,9 @@ private:
     void cancelInlineText(bool restoreOriginal = true);
     void updateToolbarGeometry();
     void updateMagnifier(const QPoint &localPos);
+    void scheduleMagnifierUpdate(const QPoint &localPos);
+    QRect selectionVisualRect(const QRect &selection) const;
+    void updateSelectionVisualRegion(const QRect &before, const QRect &after);
     void updateToolOptionsGeometry();
     QRect toolOptionsRect() const;
     void showTipBubble(QToolButton *button);
@@ -146,6 +150,10 @@ private:
     MagnifierWidget *m_magnifier = nullptr;
     QWidget *m_tipBubble = nullptr;
     QLabel *m_tipLabel = nullptr;
+    QTimer *m_magnifierUpdateTimer = nullptr;
+    QElapsedTimer m_magnifierFrameTimer;
+    QPoint m_pendingMagnifierPos;
+    bool m_hasPendingMagnifierPos = false;
 };
 
 #endif // CAPTURE_OVERLAY_WIDGET_H

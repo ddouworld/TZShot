@@ -23,6 +23,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QKeySequence>
 #include <QPlainTextEdit>
 #include <QScreen>
 #include <QSpinBox>
@@ -1012,6 +1013,21 @@ void StickyPinWidget::mousePressEvent(QMouseEvent *event)
     QWidget::mousePressEvent(event);
 }
 
+void StickyPinWidget::keyPressEvent(QKeyEvent *event)
+{
+    if (event
+        && event->matches(QKeySequence::Undo)
+        && (!m_inlineTextPanel || !m_inlineTextPanel->isVisible())
+        && m_canvas
+        && m_canvas->hasAnnotations()) {
+        m_canvas->undo();
+        event->accept();
+        return;
+    }
+
+    QWidget::keyPressEvent(event);
+}
+
 bool StickyPinWidget::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched == m_inlineTextEditor && event) {
@@ -1025,6 +1041,9 @@ bool StickyPinWidget::eventFilter(QObject *watched, QEvent *event)
                 && keyEvent->modifiers().testFlag(Qt::ControlModifier)) {
                 submitInlineText();
                 return true;
+            }
+            if (keyEvent->matches(QKeySequence::Undo)) {
+                return QWidget::eventFilter(watched, event);
             }
         }
         if (event->type() == QEvent::Wheel) {
@@ -1041,6 +1060,18 @@ bool StickyPinWidget::eventFilter(QObject *watched, QEvent *event)
         }
         if (event->type() == QEvent::FocusOut && m_inlineTextPanel && m_inlineTextPanel->isVisible()) {
             submitInlineText();
+        }
+    }
+    if (event && event->type() == QEvent::KeyPress) {
+        auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->matches(QKeySequence::Undo)
+            && watched != m_inlineTextEditor
+            && (!m_inlineTextPanel || !m_inlineTextPanel->isVisible())
+            && m_canvas
+            && m_canvas->hasAnnotations()) {
+            m_canvas->undo();
+            keyEvent->accept();
+            return true;
         }
     }
     if (watched && event && event->type() == QEvent::Wheel) {
